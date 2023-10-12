@@ -1,0 +1,10 @@
+GLOBAL_MAPPER_SCRIPT VERSION=1.00
+// Export vector as shapefile
+EXPORT_VECTOR FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\toposcript\\output\\contour.dxf" \
+TYPE=DXF \
+EXPORT_LAYER="GENERATED CONTOURS"\
+//SHAPE_TYPE=LINES \
+GEN_PRJ_FILE=NO \
+SPLIT_BY_ATTR=NO \
+FILENAME_ATTR_LIST="<Feature Name>" \
+FILENAME_INCLUDE_ATTR_NAME=YES
