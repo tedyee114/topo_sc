@@ -71,8 +71,14 @@ LOG_MESSAGE %TIMESTAMP%: Step2 done: data_grid Generated
     //     NO_DATA_DIST_MULT=0
 LOG_MESSAGE %TIMESTAMP%: Step3 done: kml_grid should have been generated before script
 
-//4: Merge GROUND+B&W GRID
 //5: KML GRID-MERGED GRID=OBSTRUCTION GRID
+    COMBINE_TERRAIN \
+        LAYER1_FILENAME="kml_grid"\
+        LAYER2_FILENAME="data_grid"\
+        COMBINE_OP=FILTER_KEEP_FIRST_IF_SECOND_INVALID\
+        LAYER_DESC="obstruction_grid"
+        ELEV_UNITS=FEET\
+        SPATIAL_RES_METERS=0.2\
 //6: OBSTRCUTION GRID>areas>simplify>lines
 //7: GENERATE_LAYER_BOUNDS FILENAME="data_grid" BOUNDS_TYPE=POLYGON
 LOG_MESSAGE %TIMESTAMP%: Step4 not done
