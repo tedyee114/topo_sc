@@ -2,7 +2,7 @@
 //Made by Ted Yee 2023-10-17 for Airworks Inc.
 //Unlicensed, contains no proprietary infomation
 //
-//Currently, only file needing to be loaded before running is an elev-assigned kML, all others will be imported from hard-coded locations
+//must start with files named "kml_grid", "kml", "pointcloud", "overhang", "water"
 
 GLOBAL_MAPPER_SCRIPT VERSION="1.00"
 //need to add variable units for that later, currently hard-coded to feet
@@ -29,8 +29,11 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
     //DIR_LOOP_END
 //END_IF
 
-//0: import just one file
-    import FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\2710.las"
+//0: all files must imported before being operated upon below (even though it requests the filepath again)
+    // import FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\2710.las"
+    // import FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\merlin_el.dxf"
+    // import FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\2710_W-WATER.dxf"
+    // import FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\2710_B-OVERHANG.dxf"
 LOG_MESSAGE %TIMESTAMP%: Step0 done: Hardcoded Single File Imported
 
 //1: Manually QC Pointcloud Classification
@@ -40,9 +43,12 @@ LOG_MESSAGE %TIMESTAMP%: Step1 MANUALLY SKIPPED!!!!: no pointcloud classificatio
     //turn off all except ground class
     //set elev units to feet depending on native projection
     GENERATE_ELEV_GRID\
-        FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\2710.las"\
-        FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\2710_B-OVERHANG.dxf"\
-        FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\2710_W-WATER.dxf"\
+        // FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\2710.las"\
+        // FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\2710_B-OVERHANG.dxf"\
+        // FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\2710_W-WATER.dxf"
+        FILENAME="pointcloud"\
+        FILENAME="overhang"\
+        FILENAME="water"\
         LAYER_DESC="data_grid"\
         GRID_TYPE=ELEVATION\
         GRID_ALG=BIN_AVG\
@@ -54,16 +60,16 @@ LOG_MESSAGE %TIMESTAMP%: Step2 done: data_grid Generated
 //3: Create KML GRID
     //assign KML points elevations
     //set elev units to feet depending on native projection again (atleast get rid of the hard-coding)?
-    //for now, the elevation-added file must be loaded ahead of time
-    GENERATE_ELEV_GRID\
-        FILENAME="MERLIN_elev.kml"\
-        LAYER_DESC="kml_grid"\
-        GRID_TYPE=ELEVATION\
-        GRID_ALG=BIN_AVG\
-        ELEV_UNITS=FEET\
-        SPATIAL_RES_METERS=0.9\
-        NO_DATA_DIST_MULT=0
-LOG_MESSAGE %TIMESTAMP%: Step3 done: kml_grid Generated
+    //for now, the elevation grid must be added before the script.
+    // GENERATE_ELEV_GRID\
+    //     FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\merlin_el.dxf"\
+    //     LAYER_DESC="kml_grid"\
+    //     GRID_TYPE=ELEVATION\
+    //     GRID_ALG=BIN_AVG\
+    //     ELEV_UNITS=FEET\
+    //     SPATIAL_RES_METERS=0.9\
+    //     NO_DATA_DIST_MULT=0
+LOG_MESSAGE %TIMESTAMP%: Step3 done: kml_grid should have been generated before script
 
 //4: Merge GROUND+B&W GRID
 //5: KML GRID-MERGED GRID=OBSTRUCTION GRID
