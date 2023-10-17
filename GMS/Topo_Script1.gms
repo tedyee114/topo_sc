@@ -82,20 +82,21 @@ LOG_MESSAGE %TIMESTAMP%: Step3 done: kml_grid should have been generated before 
 LOG_MESSAGE %TIMESTAMP%: Step4 done: obstruction_grid generated
 
 
-//6: OBSTRUCTION GRID>areas>simplify>lines
+//6: OBSTRUCTION GRID>delete islands smaller than>areas>simplify>lines
+    
     GENERATE_LAYER_BOUNDS \
-        FILENAME="obs_grid"
-        LAYER_DESC="obs_area"
+        FILENAME="obs_grid"\
+        LAYER_DESC="obs_area"\
         BOUNDS_TYPE=POLYGON
     EDIT_VECTOR \
         FILENAME="obs_area"\
         CONVERT_AREAS_TO_LINES=YES\
-        SIMPLIFICATION=20
+        SMOOTH_FEATURES=YES
 LOG_MESSAGE %TIMESTAMP%: Step5 done: grid>areas>simplify>lines
 
 //8: Create NEW/LOOSER GROUND GRID>contours only within obstrucion and KML
     GENERATE_ELEV_GRID\
-        FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\merlin_el.dxf"\
+        FILENAME="pointcloud"
         LAYER_DESC="loose_kml_grid_for_contours"\
         GRID_TYPE=ELEVATION\
         GRID_ALG=BIN_AVG\
@@ -109,11 +110,11 @@ LOG_MESSAGE %TIMESTAMP%: Step5 done: grid>areas>simplify>lines
         FILENAME="loose_kml_grid_for_contours" \
         INTERVAL=20 \
         LAYER_DESC="contours"\
-        LAYER_BOUNDS="kml"\
-        LAYER_BOUNDS="obs_area"\
+        //LAYER_BOUNDS="kml"\     //only accepts one bounds
+        LAYER_BOUNDS="obs_area"
 LOG_MESSAGE %TIMESTAMP%: Step6 done: Clipped Contours Generated
 
-9: EXPORT into DXF
+//9: EXPORT into DXF
 //add %variable% export name
 EXPORT_VECTOR \
 	FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\output\\contour.dxf" \
