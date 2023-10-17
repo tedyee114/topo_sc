@@ -53,7 +53,7 @@ LOG_MESSAGE %TIMESTAMP%: Step1 MANUALLY SKIPPED!!!!: no pointcloud classificatio
         GRID_TYPE=ELEVATION\
         GRID_ALG=BIN_AVG\
         ELEV_UNITS=FEET\
-        SPATIAL_RES_METERS=0.9\
+        SPATIAL_RES_METERS=0.1\
         NO_DATA_DIST_MULT=0
 LOG_MESSAGE %TIMESTAMP%: Step2 done: data_grid Generated
 
@@ -76,32 +76,56 @@ LOG_MESSAGE %TIMESTAMP%: Step3 done: kml_grid should have been generated before 
         LAYER1_FILENAME="kml_grid"\
         LAYER2_FILENAME="data_grid"\
         COMBINE_OP=FILTER_KEEP_FIRST_IF_SECOND_INVALID\
-        LAYER_DESC="obstruction_grid"
+        LAYER_DESC="obs_grid"\
+        ELEV_UNITS=FEET\
+        SPATIAL_RES_METERS=0.1\
+LOG_MESSAGE %TIMESTAMP%: Step4 done: obstruction_grid generated
+
+
+//6: OBSTRUCTION GRID>areas>simplify>lines
+    GENERATE_LAYER_BOUNDS \
+        FILENAME="obs_grid"
+        LAYER_DESC="obs_area"
+        BOUNDS_TYPE=POLYGON
+    EDIT_VECTOR \
+        FILENAME="obs_area"\
+        CONVERT_AREAS_TO_LINES=YES\
+        SIMPLIFICATION=20
+LOG_MESSAGE %TIMESTAMP%: Step5 done: grid>areas>simplify>lines
+
+//8: Create NEW/LOOSER GROUND GRID>contours only within obstrucion and KML
+    GENERATE_ELEV_GRID\
+        FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\merlin_el.dxf"\
+        LAYER_DESC="loose_kml_grid_for_contours"\
+        GRID_TYPE=ELEVATION\
+        GRID_ALG=BIN_AVG\
         ELEV_UNITS=FEET\
         SPATIAL_RES_METERS=0.2\
-//6: OBSTRCUTION GRID>areas>simplify>lines
-//7: GENERATE_LAYER_BOUNDS FILENAME="data_grid" BOUNDS_TYPE=POLYGON
-LOG_MESSAGE %TIMESTAMP%: Step4 not done
+        NO_DATA_DIST_MULT=3
+    // EDIT_VECTOR \
+    //     CROP_AREAS_TO_LINES\
+    //     AREA_FILENAME=
+    GENERATE_CONTOURS \
+        FILENAME="loose_kml_grid_for_contours" \
+        INTERVAL=20 \
+        LAYER_DESC="contours"\
+        LAYER_BOUNDS="kml"\
+        LAYER_BOUNDS="obs_area"\
+LOG_MESSAGE %TIMESTAMP%: Step6 done: Clipped Contours Generated
 
-//8: Create NEW/LOOSER GROUND GRID>contours.clip to obstrucion and KML
-//     GENERATE_CONTOURS \
-//         FILENAME="data_grid" \
-//         INTERVAL=20 \
-//         LAYER_DESC="contours"
-LOG_MESSAGE %TIMESTAMP%: Step5 not done
-
-//9: EXPORT into DXF
-////add %variable% export name
-// EXPORT_VECTOR \
-// 	FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\output\\contour.dxf" \
-// 	TYPE=DXF \
-// 	EXPORT_LAYER="contours"\
-// 	SHAPE_TYPE=LINES \
-// 	GEN_PRJ_FILE=NO \
-// 	SPLIT_BY_ATTR=NO \
-// 	SPATIAL_RES_METERS=0.25\
-// 	FILENAME_ATTR_LIST="<Feature Name>" \
-// 	FILENAME_INCLUDE_ATTR_NAME=YES
+9: EXPORT into DXF
+//add %variable% export name
+EXPORT_VECTOR \
+	FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\output\\contour.dxf" \
+	TYPE=DXF \
+	EXPORT_LAYER="obs_area"\
+    EXPORT_LAYER="contours"\
+	SHAPE_TYPE=LINES \
+	GEN_PRJ_FILE=NO \
+	SPLIT_BY_ATTR=NO \
+	SPATIAL_RES_METERS=0.25\
+	FILENAME_ATTR_LIST="<Feature Name>" \
+	FILENAME_INCLUDE_ATTR_NAME=YES
 LOG_MESSAGE %TIMESTAMP%: Step6 not done
 
 //10: Merge into main DXF?
