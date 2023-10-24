@@ -50,12 +50,12 @@ LOG_MESSAGE %TIMESTAMP%: Step1 MANUALLY SKIPPED!!!!: no pointcloud classificatio
         FILENAME="overhang"\
         FILENAME="water"\
         LAYER_DESC="data_grid"\
-        LIDAR_FILTER=1\
+        LIDAR_FILTER=2\
         GRID_TYPE=ELEVATION\
         GRID_ALG=BIN_AVG\
         ELEV_UNITS=FEET\
-        SPATIAL_RES_METERS=.1\
-        NO_DATA_DIST_MULT=1
+        SPATIAL_RES_METERS=.9\
+        NO_DATA_DIST_MULT=0
 LOG_MESSAGE %TIMESTAMP%: Step2 done: data_grid Generated
 
 //3: Create KML GRID
@@ -83,7 +83,7 @@ LOG_MESSAGE %TIMESTAMP%: Step3 done: kml_grid should have been generated before 
         COMBINE_OP=FILTER_KEEP_FIRST_IF_SECOND_INVALID\
         LAYER_DESC="obs_grid"\
         ELEV_UNITS=FEET\
-        SPATIAL_RES_METERS=.1
+        SPATIAL_RES_METERS=.2
 LOG_MESSAGE %TIMESTAMP%: Step4 done: obstruction_grid generated
 
 
@@ -114,7 +114,8 @@ LOG_MESSAGE %TIMESTAMP%: Step5 done: grid>areas>simplify>lines
         MULT_MINOR=1\
         MULT_MAJOR=5\
         LAYER_DESC="contours"\
-        LAYER_BOUNDS="obs_area"
+        //POLYGON_CROP_FILE="kml"\
+		POLYGON_CROP_FILE="obs_area"
 LOG_MESSAGE %TIMESTAMP%: Step6 done: Clipped Contours Generated
 
 //9: EXPORT into DXF
