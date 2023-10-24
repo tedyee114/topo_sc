@@ -2,12 +2,13 @@
 //Made by Ted Yee 2023-10-17 for Airworks Inc.
 //Unlicensed, contains no proprietary infomation
 //
-//must start with files named "kml_grid", "kml", "pointcloud", "overhang", "water"
+//must start with files named "kml"(already gridded, "pointcloud", "overhang", "water"
 
 GLOBAL_MAPPER_SCRIPT VERSION="1.00"
 //need to add variable units for that later, currently hard-coded to feet
 
-//use this block to import all files from a folder
+//0: all files must imported before being operated upon below (even though it requests the filepath again)
+    //use this block to import all files from a folder
     //DEFINE_VAR\
         //NAME="FILEORFOLDER"\
         //PROMPT="Single file=YES, Many tiles in a folder=NO"
@@ -27,22 +28,19 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
     //DIR_LOOP_START DIRECTORY="%FOLDER%" FILENAME_MASKS= "*.tif" RECURSE_DIR=YES
     //IMPORT FILENAME="%FNAME_W_DIR%"
     //DIR_LOOP_END
-//END_IF
-
-//0: all files must imported before being operated upon below (even though it requests the filepath again)
-    // import FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\2710.las"
+	//END_IF
+	// import FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\2710.las"
     // import FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\merlin_el.dxf"
     // import FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\2710_W-WATER.dxf"
     // import FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\2710_B-OVERHANG.dxf"
-LOG_MESSAGE %TIMESTAMP%: Step0 done: Hardcoded Single File Imported
+LOG_MESSAGE %TIMESTAMP%: Step0  MANUALLY SKIPPED!!!!: files previously opend, nothing imported
 
 //1: Manually QC Pointcloud Classification
 LOG_MESSAGE %TIMESTAMP%: Step1 MANUALLY SKIPPED!!!!: no pointcloud classification needed
 
 //2:  Create data_grid from ground points, buildings, and water polygons
-    //turn off all except ground class--maybe done??
     //set elev units to feet depending on native projection
-    GENERATE_ELEV_GRID\
+    GENERATE_ELEV_GRID \
         // FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\2710.las"\
         // FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\2710_B-OVERHANG.dxf"\
         // FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\2710_W-WATER.dxf"
@@ -54,7 +52,7 @@ LOG_MESSAGE %TIMESTAMP%: Step1 MANUALLY SKIPPED!!!!: no pointcloud classificatio
         GRID_TYPE=ELEVATION\
         GRID_ALG=BIN_AVG\
         ELEV_UNITS=FEET\
-        SPATIAL_RES_METERS=.9\
+        SPATIAL_RES_METERS=2\
         NO_DATA_DIST_MULT=0
 LOG_MESSAGE %TIMESTAMP%: Step2 done: data_grid Generated
 
@@ -62,9 +60,9 @@ LOG_MESSAGE %TIMESTAMP%: Step2 done: data_grid Generated
     //assign KML points elevations
     //set elev units to feet depending on native projection again (atleast get rid of the hard-coding)?
     //EDIT_VECTOR \
-      //  FILENAME="kml"\
-        //APPLY_ELEVS \
-        //ELEV_LAYER="2710.las (DTM Elevation Values)"
+      //APPLY_ELEVS \
+	  //  FILENAME="kml"\
+        //ELEV_LAYER="2710.las (DTM Elevation Values)"   //can see sample scripts page 96 of pdf
     //for now, the elevation grid must be added before the script.
     // GENERATE_ELEV_GRID\
     //     FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\merlin_el.dxf"\
@@ -74,20 +72,20 @@ LOG_MESSAGE %TIMESTAMP%: Step2 done: data_grid Generated
     //     ELEV_UNITS=FEET\
     //     SPATIAL_RES_METERS=0.9\
     //     NO_DATA_DIST_MULT=0
-LOG_MESSAGE %TIMESTAMP%: Step3 done: kml_grid should have been generated before script
+LOG_MESSAGE %TIMESTAMP%: Step3 MANUALLY SKIPPED!!!!: kml_grid should have been generated before script
 
-//5: KML GRID-MERGED GRID=OBSTRUCTION GRID
+//4: KML GRID-MERGED GRID=OBSTRUCTION GRID
     COMBINE_TERRAIN \
         LAYER1_FILENAME="kml_grid"\
         LAYER2_FILENAME="data_grid"\
         COMBINE_OP=FILTER_KEEP_FIRST_IF_SECOND_INVALID\
         LAYER_DESC="obs_grid"\
         ELEV_UNITS=FEET\
-        SPATIAL_RES_METERS=.05
+        SPATIAL_RES_METERS=2
 LOG_MESSAGE %TIMESTAMP%: Step4 done: obstruction_grid generated
 
 
-//6: OBSTRUCTION GRID>delete islands smaller than>areas>simplify>lines
+//5: OBSTRUCTION GRID>areas>simplify>lines
     GENERATE_LAYER_BOUNDS \
         FILENAME="obs_grid"\
         LAYER_DESC="obs_area"\
@@ -95,8 +93,24 @@ LOG_MESSAGE %TIMESTAMP%: Step4 done: obstruction_grid generated
     EDIT_VECTOR \
         FILENAME="obs_area"\
         CONVERT_AREAS_TO_LINES=YES\
-        SMOOTH_FEATURES=YES
+		SMOOTH_FEATURES=YES\
+		STYLE_ATTR="LINE_COLOR=RGB(255,0,0)"
 LOG_MESSAGE %TIMESTAMP%: Step5 done: grid>areas>simplify>lines
+
+//6: Delete islands smaller than 200 ft^2
+	ADD_MEASURE_ATTRS \
+		FILENAME="obs_area"\
+		AREA_UNITS="SQUARE FEET"\
+		MEASURE_UNIT_TYPE=BASE
+	
+	IF COMPARE_STR="ENCLOSED AREA<200"
+		EDIT_VECTOR \
+		//COMPARE_NUM=YES\
+		FILENAME="obs_area"\
+		DELETE_FEATURES=YES
+	END_IF
+LOG_MESSAGE %TIMESTAMP%: Step6 done: deleting small islands
+
 
 //8: Create NEW/LOOSER GROUND GRID>contours only within obstrucion and KML
     GENERATE_ELEV_GRID \
@@ -122,17 +136,17 @@ LOG_MESSAGE %TIMESTAMP%: Step6 done: Clipped Contours Generated
 
 //9: EXPORT into DXF
 //add %variable% export name
-EXPORT_VECTOR \
-	FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\output\\contour.dxf" \
-	TYPE=DXF \
-	EXPORT_LAYER="obs_area"\
-    EXPORT_LAYER="contours"\
-	SHAPE_TYPE=LINES \
-	GEN_PRJ_FILE=NO \
-	SPLIT_BY_ATTR=NO \
-	SPATIAL_RES_METERS=0.25\
-	FILENAME_ATTR_LIST="<Feature Name>"
+	EXPORT_VECTOR \
+		FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\output\\contour.dxf" \
+		TYPE=DXF \
+		EXPORT_LAYER="obs_area"\
+	    EXPORT_LAYER="contours"\
+		SHAPE_TYPE=LINES \
+		GEN_PRJ_FILE=NO \
+		SPLIT_BY_ATTR=NO \
+		SPATIAL_RES_METERS=0.25\
+		FILENAME_ATTR_LIST="<Feature Name>"
 LOG_MESSAGE %TIMESTAMP%: Step 7 done: file exported to C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\output
 
 //10: Merge into main DXF?
-import FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\output\\contour.dxf"
+	import FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\output\\contour.dxf"
