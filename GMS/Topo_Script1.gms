@@ -83,7 +83,7 @@ LOG_MESSAGE %TIMESTAMP%: Step3 done: kml_grid should have been generated before 
         COMBINE_OP=FILTER_KEEP_FIRST_IF_SECOND_INVALID\
         LAYER_DESC="obs_grid"\
         ELEV_UNITS=FEET\
-        SPATIAL_RES_METERS=.2
+        SPATIAL_RES_METERS=.05
 LOG_MESSAGE %TIMESTAMP%: Step4 done: obstruction_grid generated
 
 
@@ -115,7 +115,9 @@ LOG_MESSAGE %TIMESTAMP%: Step5 done: grid>areas>simplify>lines
         MULT_MAJOR=5\
         LAYER_DESC="contours"\
         //POLYGON_CROP_FILE="kml"\
-		POLYGON_CROP_FILE="obs_area"
+		POLYGON_CROP_FILE="obs_area"\
+		POLYGON_CROP_USE_ALL=YES\
+		POLYGON_CROP_EXCLUDE=YES
 LOG_MESSAGE %TIMESTAMP%: Step6 done: Clipped Contours Generated
 
 //9: EXPORT into DXF
