@@ -40,7 +40,7 @@ LOG_MESSAGE %TIMESTAMP%: Step0 done: Hardcoded Single File Imported
 LOG_MESSAGE %TIMESTAMP%: Step1 MANUALLY SKIPPED!!!!: no pointcloud classification needed
 
 //2:  Create data_grid from ground points, buildings, and water polygons
-    //turn off all except ground class
+    //turn off all except ground class--maybe done??
     //set elev units to feet depending on native projection
     GENERATE_ELEV_GRID\
         // FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\2710.las"\
@@ -50,16 +50,21 @@ LOG_MESSAGE %TIMESTAMP%: Step1 MANUALLY SKIPPED!!!!: no pointcloud classificatio
         FILENAME="overhang"\
         FILENAME="water"\
         LAYER_DESC="data_grid"\
+        LIDAR_FILTER=1\
         GRID_TYPE=ELEVATION\
         GRID_ALG=BIN_AVG\
         ELEV_UNITS=FEET\
-        SPATIAL_RES_METERS=0.1\
-        NO_DATA_DIST_MULT=0
+        SPATIAL_RES_METERS=.1\
+        NO_DATA_DIST_MULT=1
 LOG_MESSAGE %TIMESTAMP%: Step2 done: data_grid Generated
 
 //3: Create KML GRID
     //assign KML points elevations
     //set elev units to feet depending on native projection again (atleast get rid of the hard-coding)?
+    //EDIT_VECTOR \
+      //  FILENAME="kml"\
+        //APPLY_ELEVS \
+        //ELEV_LAYER="2710.las (DTM Elevation Values)"
     //for now, the elevation grid must be added before the script.
     // GENERATE_ELEV_GRID\
     //     FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\merlin_el.dxf"\
@@ -78,12 +83,11 @@ LOG_MESSAGE %TIMESTAMP%: Step3 done: kml_grid should have been generated before 
         COMBINE_OP=FILTER_KEEP_FIRST_IF_SECOND_INVALID\
         LAYER_DESC="obs_grid"\
         ELEV_UNITS=FEET\
-        SPATIAL_RES_METERS=0.1\
+        SPATIAL_RES_METERS=.1
 LOG_MESSAGE %TIMESTAMP%: Step4 done: obstruction_grid generated
 
 
 //6: OBSTRUCTION GRID>delete islands smaller than>areas>simplify>lines
-    
     GENERATE_LAYER_BOUNDS \
         FILENAME="obs_grid"\
         LAYER_DESC="obs_area"\
@@ -95,22 +99,21 @@ LOG_MESSAGE %TIMESTAMP%: Step4 done: obstruction_grid generated
 LOG_MESSAGE %TIMESTAMP%: Step5 done: grid>areas>simplify>lines
 
 //8: Create NEW/LOOSER GROUND GRID>contours only within obstrucion and KML
-    GENERATE_ELEV_GRID\
-        FILENAME="pointcloud"
+    GENERATE_ELEV_GRID \
+        FILENAME="pointcloud" \
         LAYER_DESC="loose_kml_grid_for_contours"\
         GRID_TYPE=ELEVATION\
+        LAYER_BOUNDS="kml"\ 
         GRID_ALG=BIN_AVG\
         ELEV_UNITS=FEET\
-        SPATIAL_RES_METERS=0.2\
+        SPATIAL_RES_METERS=1\
         NO_DATA_DIST_MULT=3
-    // EDIT_VECTOR \
-    //     CROP_AREAS_TO_LINES\
-    //     AREA_FILENAME=
     GENERATE_CONTOURS \
         FILENAME="loose_kml_grid_for_contours" \
-        INTERVAL=20 \
+        INTERVAL=1\
+        MULT_MINOR=1\
+        MULT_MAJOR=5\
         LAYER_DESC="contours"\
-        //LAYER_BOUNDS="kml"\     //only accepts one bounds
         LAYER_BOUNDS="obs_area"
 LOG_MESSAGE %TIMESTAMP%: Step6 done: Clipped Contours Generated
 
@@ -125,8 +128,8 @@ EXPORT_VECTOR \
 	GEN_PRJ_FILE=NO \
 	SPLIT_BY_ATTR=NO \
 	SPATIAL_RES_METERS=0.25\
-	FILENAME_ATTR_LIST="<Feature Name>" \
-	FILENAME_INCLUDE_ATTR_NAME=YES
-LOG_MESSAGE %TIMESTAMP%: Step6 not done
+	FILENAME_ATTR_LIST="<Feature Name>"
+LOG_MESSAGE %TIMESTAMP%: Step 7 done: file exported to C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\output
 
 //10: Merge into main DXF?
+import FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\output\\contour.dxf"
