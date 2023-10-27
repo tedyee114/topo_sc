@@ -52,7 +52,7 @@ LOG_MESSAGE %TIMESTAMP%: Step1 MANUALLY SKIPPED!!!!: no pointcloud classificatio
         GRID_TYPE=ELEVATION\
         GRID_ALG=BIN_AVG\
         ELEV_UNITS=FEET\
-        SPATIAL_RES_METERS=2\
+        SPATIAL_RES_METERS=.15\
         NO_DATA_DIST_MULT=0
 LOG_MESSAGE %TIMESTAMP%: Step2 done: data_grid Generated
 
@@ -98,17 +98,19 @@ LOG_MESSAGE %TIMESTAMP%: Step4 done: obstruction_grid generated
 LOG_MESSAGE %TIMESTAMP%: Step5 done: grid>areas>simplify>lines
 
 //6: Delete islands smaller than 200 ft^2
-	ADD_MEASURE_ATTRS \
-		FILENAME="obs_area"\
-		AREA_UNITS="SQUARE FEET"\
-		MEASURE_UNIT_TYPE=BASE
-	
-	IF COMPARE_STR="ENCLOSED AREA<200"
+	// ADD_MEASURE_ATTRS \
+	// 	FILENAME="obs_area"\
+	// 	AREA_UNITS="SQUARE FEET"\
+	// 	MEASURE_UNIT_TYPE=BASE
+
+    LAYER_LOOP_START FILENAME="obs_area" // VAR_NAME_PREFIX="HIDE"
+        IF COMPARE_STR="ENCLOSED AREA<200" COMPARE_NUM=YES
 		EDIT_VECTOR \
-		//COMPARE_NUM=YES\
 		FILENAME="obs_area"\
 		DELETE_FEATURES=YES
 	END_IF
+    LAYER_LOOP_END
+	
 LOG_MESSAGE %TIMESTAMP%: Step6 done: deleting small islands
 
 
@@ -117,6 +119,7 @@ LOG_MESSAGE %TIMESTAMP%: Step6 done: deleting small islands
         FILENAME="pointcloud" \
         LAYER_DESC="loose_kml_grid_for_contours"\
         GRID_TYPE=ELEVATION\
+		LIDAR_FILTER=2\
         LAYER_BOUNDS="kml"\ 
         GRID_ALG=BIN_AVG\
         ELEV_UNITS=FEET\
@@ -124,14 +127,14 @@ LOG_MESSAGE %TIMESTAMP%: Step6 done: deleting small islands
         NO_DATA_DIST_MULT=3
     GENERATE_CONTOURS \
         FILENAME="loose_kml_grid_for_contours" \
-        INTERVAL=1\
+        INTERVAL=2\
         MULT_MINOR=1\
         MULT_MAJOR=5\
         LAYER_DESC="contours"\
-        //POLYGON_CROP_FILE="kml"\
-		POLYGON_CROP_FILE="obs_area"\
+        POLYGON_CROP_FILE="obs_area"\
 		POLYGON_CROP_USE_ALL=YES\
-		POLYGON_CROP_EXCLUDE=YES
+		POLYGON_CROP_EXCLUDE=YES\
+		STYLE_ATTR="LINE_COLOR=RGB(0,0,0)"
 LOG_MESSAGE %TIMESTAMP%: Step6 done: Clipped Contours Generated
 
 //9: EXPORT into DXF
@@ -145,8 +148,13 @@ LOG_MESSAGE %TIMESTAMP%: Step6 done: Clipped Contours Generated
 		GEN_PRJ_FILE=NO \
 		SPLIT_BY_ATTR=NO \
 		SPATIAL_RES_METERS=0.25\
-		FILENAME_ATTR_LIST="<Feature Name>"
+		FILENAME_ATTR_LIST="<Feature Name>"\
+        POLYGON_CROP_FILE="kml"\
+		POLYGON_CROP_USE_ALL=YES
 LOG_MESSAGE %TIMESTAMP%: Step 7 done: file exported to C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\output
 
 //10: Merge into main DXF?
+	LAYER_LOOP_START FILENAME="*" VAR_NAME_PREFIX="HIDE"
+	SET_LAYER_OPTIONS FILENAME="%HIDE_FNAME_W_DIR%" HIDDEN=YES
+	LAYER_LOOP_END
 	import FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\output\\contour.dxf"
