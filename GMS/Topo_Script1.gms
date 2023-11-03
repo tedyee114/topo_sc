@@ -81,7 +81,7 @@ LOG_MESSAGE %TIMESTAMP%: Step3 MANUALLY SKIPPED!!!!: kml_grid should have been g
         COMBINE_OP=FILTER_KEEP_FIRST_IF_SECOND_INVALID\
         LAYER_DESC="obs_grid"\
         ELEV_UNITS=FEET\
-        SPATIAL_RES_METERS=2
+        SPATIAL_RES_METERS=.1
 LOG_MESSAGE %TIMESTAMP%: Step4 done: obstruction_grid generated
 
 
@@ -151,10 +151,11 @@ LOG_MESSAGE %TIMESTAMP%: Step6 done: Clipped Contours Generated
 		FILENAME_ATTR_LIST="<Feature Name>"\
         POLYGON_CROP_FILE="kml"\
 		POLYGON_CROP_USE_ALL=YES
-LOG_MESSAGE %TIMESTAMP%: Step 7 done: file exported to C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\output
+LOG_MESSAGE %TIMESTAMP%: Step 7 done: file exported to C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\output. Process took %TIME_SINCE_START%
+
 
 //10: Merge into main DXF?
 	LAYER_LOOP_START FILENAME="*" VAR_NAME_PREFIX="HIDE"
 	SET_LAYER_OPTIONS FILENAME="%HIDE_FNAME_W_DIR%" HIDDEN=YES
 	LAYER_LOOP_END
-	import FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\output\\contour.dxf"
+	import FILENAME="C:\\Users\\ted_airworks.io\\Documents\\Scripts\\merged.dxf"
