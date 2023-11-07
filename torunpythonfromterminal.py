@@ -2,13 +2,13 @@ import sys                                                  #idk what this does 
 import subprocess                                           #gives access to the windows commandline
 import pkg_resources                                        #for downloading ezdxf
 
-required = {'ezdxf'}                                        #checks if ezdxf is already on computer
-installed = {pkg.key for pkg in pkg_resources.working_set}
-missing = required - installed
+# required = {'ezdxf'}                                        #checks if ezdxf is already on computer
+# installed = {pkg.key for pkg in pkg_resources.working_set}
+# missing = required - installed
 
-if missing:                                                 #if not already, installs exdxf (.dxf file manamgent library)
-    python = sys.executable
-    subprocess.check_call([python, '-m', 'pip', 'install', *missing], stdout=subprocess.DEVNULL)
+# if missing:                                                 #if not already, installs exdxf (.dxf file manamgent library)
+#     python = sys.executable
+#     subprocess.check_call([python, '-m', 'pip', 'install', *missing], stdout=subprocess.DEVNULL)
 
 import ezdxf                                                #imports library for use within the script
 from ezdxf.addons import Importer                           #imports the importer (inception, lol)
@@ -31,21 +31,26 @@ from ezdxf.addons import Importer                           #imports the importe
 # output_location = filedialog.askdirectory(initialdir = "\\", title = "Please Select the Output Folder for your contours")
 # print (output_location)
 # #endregion
+print('Step 0 Complete: Add-Ons Prepared, Now Setting Filepaths')
 
 #Input filepaths here
 global_mapper_exe=  "C:\\Program Files\\GlobalMapper23.1_64bit\\global_mapper.exe"
 script=             "C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\topo_sc\\GMS\\Topo_Script1.gms"
 startfile=          "C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\startfile.gmw"
-base_dxf=           ezdxf.readfile("C:\\Users\\ted_airworks.io\\Documents\\Scripts\\v0_SCE_-_1597246_MERLIN_2023-07-27.dxf")
-contour_output_dxf= ezdxf.readfile("C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\contour.dxf")
+base_dxf=           ezdxf.readfile("C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\v0_SCE_-_1597246_MERLIN_2023-07-27.dxf")
+contour_output_dxf= ezdxf.readfile("C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\output\\contour.dxf")
 final_location=     "C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\merged.dxf"
 
 # #Need to somehow pass the contour_output and other file locations to the script to it knows where to put the contours
 # #blah blah blah
 
+print('Step 1 Complete: Filepaths Set, Now opening startfile in GM and running toposcript')
+
 #Uses Command Line to run Global Mapper, then the script you wrote
-cmd = f'"{global_mapper_exe}" "{startfile}" "{script}" '
+cmd = f'"{global_mapper_exe}" "{script}" '
 subprocess.run(cmd, shell=True)
+
+print('Step 2 Complete: Toposcript complete, output in folder, Now merging with base dxf')
 
 #adding the generated contours to the base_file
 def merge(contour_output_dxf, base_dxf):
@@ -56,8 +61,9 @@ def merge(contour_output_dxf, base_dxf):
     importer.finalize()
 
 merge(contour_output_dxf, base_dxf)                                           #runs the merge function defined above
-
 base_dxf.saveas(final_location)      #saves the new file   #base_dxf.save()   # to save as original filename
+
+print('Step 3 Complete: All processes complete, Topo lines generated and merged back into Base DXF')
 
 
 

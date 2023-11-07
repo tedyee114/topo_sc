@@ -33,7 +33,9 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
     // import FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\merlin_el.dxf"
     // import FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\2710_W-WATER.dxf"
     // import FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\2710_B-OVERHANG.dxf"
-LOG_MESSAGE %TIMESTAMP%: Step0  MANUALLY SKIPPED!!!!: files previously opend, nothing imported
+
+	import FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\startfile.gmw"
+LOG_MESSAGE %TIMESTAMP%: Step0 Complete, startfile loaded
 
 //1: Manually QC Pointcloud Classification
 LOG_MESSAGE %TIMESTAMP%: Step1 MANUALLY SKIPPED!!!!: no pointcloud classification needed
@@ -52,7 +54,7 @@ LOG_MESSAGE %TIMESTAMP%: Step1 MANUALLY SKIPPED!!!!: no pointcloud classificatio
         GRID_TYPE=ELEVATION\
         GRID_ALG=BIN_AVG\
         ELEV_UNITS=FEET\
-        SPATIAL_RES_METERS=.15\
+        SPATIAL_RES_METERS=1\
         NO_DATA_DIST_MULT=0
 LOG_MESSAGE %TIMESTAMP%: Step2 done: data_grid Generated
 
