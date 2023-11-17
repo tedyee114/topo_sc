@@ -1,9 +1,0 @@
-from pickle import TRUE
-import globalmapper as gm
-
-arr_ptr, arr_size = gm.GetLoadedLayerList()                                     #makes new array of layers
-B = gm.GM_LayerHandle_array_frompointer(arr_ptr)
-
-err, KML_GRID = gm.GenerateElevationGrid2([B[0]], grid_setup)              #makes a grid out of the layer assigned to ptr=1 (the kml)
-print("D: KML_GRID Created for Layer 1")
-print(KML_GRID)
