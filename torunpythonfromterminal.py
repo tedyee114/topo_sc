@@ -39,8 +39,6 @@ global_mapper_exe=     "C:\\Program Files\\GlobalMapper23.1_64bit\\global_mapper
 script=                "C:Documents\\Scripts\\topo_sc\\GMS\\Topo_Script1.gms"
 startfile=             "C:Documents\\Scripts\\startfile.gmw"
 base_dxf=              ezdxf.readfile("Documents\\Scripts\\v0_SCE_-_1597246_MERLIN_2023-07-27.dxf")
-contour_dxf=           ezdxf.readfile("Documents\\Scripts\\contour.dxf")
-contour_stylized_dxf= 'Documents\\Scripts\\contours_stylized.dxf'
 final_location=       'Documents\\Scripts\\merged.dxf'
 print('Step 1 Complete: Filepaths Set,                           **Now opening startfile in GM and running toposcript...(this is the longest step and will take a few minutes)')
 #endregion
@@ -53,7 +51,8 @@ print('Step 1 Complete: Filepaths Set,                           **Now opening s
 print('Step 2 Complete: Toposcript complete, output in folder,   **Now stylizing contour_dxf')
 #endregion
 
-
+contour_dxf=           ezdxf.readfile("Documents\\Scripts\\contour.dxf")
+contour_stylized_dxf= 'Documents\\Scripts\\contours_stylized.dxf'
 #region 4: change layer names and colors
 doc = ezdxf.new(setup=True)                                                 #tbh, idk what this means, but its used below, "setup required line types"
 msp = doc.modelspace()
