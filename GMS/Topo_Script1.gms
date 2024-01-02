@@ -28,7 +28,7 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
     // import FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\merlin_el.dxf"
     // import FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\2710_W-WATER.dxf"
     // import FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\2710_B-OVERHANG.dxf"
-    DEFINE_VAR NAME="RES_M" PROMPT ABORT_ON_CANCEL PROMPT_TEXT="Spatial resolution in meters for data_grid and obs_grid. Suggested 0.3"
+    DEFINE_VAR NAME="RES_M" PROMPT ABORT_ON_CANCEL PROMPT_TEXT="Spatial resolution in meters for data_grid, obs_grid and output. Suggested 0.3"
     QUERY_LAYER_METADATA \
         RESULT_VAR=%UNITS% \
         METADATA_LAYER="pointcloud" \
@@ -142,9 +142,9 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
 		POLYGON_CROP_FILE="obs_polygons"\        //cropping to obs areas is the longest time, doing it during export is much faster but then they crop themselves. Maybe make two outputs to join in outer python script?
 		POLYGON_CROP_USE_ALL=YES\
 		POLYGON_CROP_EXCLUDE=YES
-		POLYGON_CROP_FILE="kml"\                 //cropping to the kml caused errors, both during contour generation and export
-		POLYGON_CROP_USE_ALL=YES\			     //maybe make it an edit_vector command since it can't be in either of these places? idk, ignoring for now
-		POLYGON_CROP_EXCLUDE=NO
+		// POLYGON_CROP_FILE="kml"\                 //cropping to the kml caused errors, both during contour generation and export
+		// POLYGON_CROP_USE_ALL=YES\			     //maybe make it an edit_vector command since it can't be in either of these places? idk, ignoring for now
+		// POLYGON_CROP_EXCLUDE=NO
     LOG_MESSAGE %TIMESTAMP%: Step6 done: Clipped Contours Generated
 
 //9: EXPORT into DXF
@@ -156,7 +156,7 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
 		SHAPE_TYPE=LINES \
 		GEN_PRJ_FILE=NO \
 		SPLIT_BY_ATTR=NO \
-		SPATIAL_RES_METERS=0.25\
+		SPATIAL_RES_METERS=%RES_M%\
 		FILENAME_ATTR_LIST="<Feature Name>"
      LOG_MESSAGE %TIMESTAMP%: Step 7 done: file exported to %FOLDER%.
 
@@ -169,6 +169,6 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
             FILENAME="%HIDE_FNAME_W_DIR%" \
             HIDDEN=YES
 	LAYER_LOOP_END
-	import FILENAME=%FOLDER%contour.dxf LOAD_PROJECTION PROJ=pc_epsg
+	import FILENAME=%FOLDER%contour.dxf USE_DEFAULT_PROJ=YES
 
 LOG_MESSAGE  Process Complete; Elapsed time %TIME_SINCE_START%
