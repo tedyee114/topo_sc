@@ -3,9 +3,7 @@
 //Unlicensed, contains no proprietary infomation
 //
 //must start with files named "kml_grid"(already gridded), "pointcloud", "overhang", "water"
-
 GLOBAL_MAPPER_SCRIPT VERSION="1.00"
-//need to add variable units for that later, currently hard-coded to feet
 
 //0: all files must imported before being operated upon below (even though it requests the filepath again)
     //use this block to import all files from a folder
@@ -21,8 +19,7 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
     //END_IF
 
     // ELSE COMPARE_STR="%FILEORFOLDER%=YES"
-    DEFINE_VAR NAME="FOLDER" VALUE="C:\Users\ted_airworks.io\Documents\Scripts\"
-	//PROMPT=DIR "Output Folder?"
+    DEFINE_VAR NAME="FOLDER" PROMPT=DIR ABORT_ON_CANCEL PROMPT_TEXT="Output Folder?"
     //DIR_LOOP_START DIRECTORY="%FOLDER%" FILENAME_MASKS= "*.tif" RECURSE_DIR=YES
     //IMPORT FILENAME="%FNAME_W_DIR%"
     //DIR_LOOP_END
@@ -31,6 +28,12 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
     // import FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\merlin_el.dxf"
     // import FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\2710_W-WATER.dxf"
     // import FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\2710_B-OVERHANG.dxf"
+    DEFINE_VAR NAME="RES_M" PROMPT ABORT_ON_CANCEL PROMPT_TEXT="Spatial resolution in meters for data_grid and obs_grid. Suggested 0.3"
+    QUERY_LAYER_METADATA \
+        RESULT_VAR=%UNITS% \
+        METADATA_LAYER="pointcloud" \
+        METADATA_ATTR="PROJ_UNITS"
+    DEFINE_VAR NAME="UNITS" PROMPT ABORT_ON_CANCEL PROMPT_TEXT="Detected pointcloud units were %UNITS%. Accept and continue? If not, please type 'feet' or 'meters' to override or click to cancel the whole script"
 
 
 	// import FILENAME="%FOLDER%startfile.gmw"
@@ -40,7 +43,6 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
     LOG_MESSAGE %TIMESTAMP%: Step1 MANUALLY SKIPPED!!!!: no pointcloud classification needed
 
 //2:  Create data_grid from ground points, buildings, and water polygons
-    //set elev units to feet depending on native projection
     GENERATE_ELEV_GRID \
         FILENAME="pointcloud"\
         FILENAME="overhang"\
@@ -49,14 +51,13 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
         LIDAR_FILTER=2\
         GRID_TYPE=ELEVATION\
         GRID_ALG=BIN_AVG\
-        ELEV_UNITS=FEET\
-        SPATIAL_RES_METERS=.1\
+        ELEV_UNITS=%UNITS%\
+        SPATIAL_RES_METERS=%RES_M%\
         NO_DATA_DIST_MULT=0
     LOG_MESSAGE %TIMESTAMP%: Step2 done: data_grid Generated
 
 //3: Create KML GRID
     //assign KML points elevations
-    //set elev units to feet depending on native projection again (atleast get rid of the hard-coding)?
     //EDIT_VECTOR \
       //APPLY_ELEVS \
 	  //  FILENAME="kml"\
@@ -67,7 +68,7 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
     //     LAYER_DESC="kml_grid"\
     //     GRID_TYPE=ELEVATION\
     //     GRID_ALG=BIN_AVG\
-    //     ELEV_UNITS=FEET\
+    //     ELEV_UNITS=%UNITS%\
     //     SPATIAL_RES_METERS=0.9\
     //     NO_DATA_DIST_MULT=0
     LOG_MESSAGE %TIMESTAMP%: Step3 MANUALLY SKIPPED!!!!: kml_grid should have been generated before script
@@ -78,97 +79,88 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
         LAYER2_FILENAME="data_grid"\
         COMBINE_OP=FILTER_KEEP_FIRST_IF_SECOND_INVALID\
         LAYER_DESC="obs_grid"\
-        ELEV_UNITS=FEET\
-        SPATIAL_RES_METERS=.1
+        ELEV_UNITS=%UNITS%\
+        SPATIAL_RES_METERS=%RES_M%
     LOG_MESSAGE %TIMESTAMP%: Step4 done: obstruction_grid generated
 
 
 //5: OBSTRUCTION GRID>areas>simplify>lines
     GENERATE_LAYER_BOUNDS \
         FILENAME="obs_grid"\
-        LAYER_DESC="obs_area"\
-        BOUNDS_TYPE=POLYGON
+        LAYER_DESC="obs_polygons"\
+        BOUNDS_TYPE=POLYGON\
+		MAX_VERTEX_COUNT=99999
     EDIT_VECTOR \
-        FILENAME="obs_area"\
+        FILENAME="obs_polygons"\
         CONVERT_AREAS_TO_LINES=YES\
 		SMOOTH_FEATURES=YES\
-		STYLE_ATTR="LINE_COLOR=RGB(255,0,0)" \
-		MOVE_TO_NEW_LAYER=YES
-		NEW_LAYER_NAME="obs_polygons"
     LOG_MESSAGE %TIMESTAMP%: Step5 done: grid>areas>simplify>lines
 
-//6: Delete islands smaller than 200 sq ft
-ADD_MEASURE_ATTRS \
-	FILENAME="obs_polygons" \
-	AREA_UNITS="SQUARE FEET" \
-	MEASURE_UNIT_TYPE="BASE"    
 
-EDIT_VECTOR \
-	FILENAME="obs_polygons"\
-	DELETE_FEATURES=YES \
-	AREA_UNITS="SQUARE FEET" \
-	COMPARE_STR="ENCLOSED_AREA<225" \
-	COMPARE_NUM=YES
-
-//     LAYER_LOOP_START FILENAME="obs_polygons"
-//         IF COMPARE_STR="ENCLOSED AREA<200" COMPARE_NUM=YES
-// 			EDIT_VECTOR \
-// 			FILENAME="obs_area"\
-// 			DELETE_FEATURES=YES
-// 		END_IF
-//     LAYER_LOOP_END
+//6: Delete islands smaller than 225 sq ft
+	//adds area value to entity's attribute list
+	ADD_MEASURE_ATTRS \
+		FILENAME="obs_polygons" \
+		AREA_UNITS="SQUARE FEET" \
+		MEASURE_UNIT_TYPE="BASE"    
 	
-//     LOG_MESSAGE %TIMESTAMP%: Step6 done: deleting small islands
+    //deletes entities with area attrubute smaller than 225sq ft
+	EDIT_VECTOR \
+		FILENAME="obs_polygons"\
+		DELETE_FEATURES=YES \
+		AREA_UNITS="SQUARE FEET" \
+		COMPARE_STR="ENCLOSED_AREA<225" \
+		COMPARE_NUM=YES
+    LOG_MESSAGE %TIMESTAMP%: Step6 done: small islands removed
 
 
-// //8: Create NEW/LOOSER GROUND GRID>contours only within obstrucion and KML
-//     GENERATE_ELEV_GRID \
-//         FILENAME="pointcloud" \
-//         LAYER_DESC="loose_kml_grid_for_contours"\
-//         GRID_TYPE=ELEVATION\
-// 		LIDAR_FILTER=2\
-//         LAYER_BOUNDS="kml"\ 
-//         GRID_ALG=BIN_AVG\
-//         ELEV_UNITS=FEET\
-//         SPATIAL_RES_METERS=1\
-//         NO_DATA_DIST_MULT=3
-//     GENERATE_CONTOURS \
-//         FILENAME="loose_kml_grid_for_contours" \
-//         INTERVAL=2\
-//         MULT_MINOR=1\
-//         MULT_MAJOR=5\
-//         LAYER_DESC="contours"\
-// 		POLYGON_CROP_FILE="obs_polygons"\        //cropping to obs areas is the longest time, doing it during export is much faster but then they crop themselves. Maybe make two outputs to join in outer python script?
-// 		POLYGON_CROP_USE_ALL=YES\
-// 		POLYGON_CROP_EXCLUDE=YES
-// 		//POLYGON_CROP_FILE="kml"\           //cropping to the kml caused errors, both during contour generation and export
-// 		//POLYGON_CROP_USE_ALL=YES\			 //maybe make it an edit_vector command since it can't be in either of these places? idk, ignoring for now
-// 		//POLYGON_CROP_EXCLUDE=NO
-//     LOG_MESSAGE %TIMESTAMP%: Step6 done: Clipped Contours Generated
+//8: Create NEW/LOOSER GROUND GRID>contours only within obstrucion and KML
+    GENERATE_ELEV_GRID \
+        FILENAME="pointcloud" \
+        LAYER_DESC="loose_kml_grid_for_contours"\
+        GRID_TYPE=ELEVATION\
+		LIDAR_FILTER=2\
+        LAYER_BOUNDS="kml"\ 
+        GRID_ALG=BIN_AVG\
+        ELEV_UNITS=%UNITS%\
+        SPATIAL_RES_METERS=1\
+        NO_DATA_DIST_MULT=3
+    GENERATE_CONTOURS \
+        FILENAME="loose_kml_grid_for_contours" \
+        INTERVAL=2\
+        MULT_MINOR=1\
+        MULT_MAJOR=5\
+        LAYER_DESC="contours"\
+		POLYGON_CROP_FILE="obs_polygons"\        //cropping to obs areas is the longest time, doing it during export is much faster but then they crop themselves. Maybe make two outputs to join in outer python script?
+		POLYGON_CROP_USE_ALL=YES\
+		POLYGON_CROP_EXCLUDE=YES
+		//POLYGON_CROP_FILE="kml"\           //cropping to the kml caused errors, both during contour generation and export
+		//POLYGON_CROP_USE_ALL=YES\			 //maybe make it an edit_vector command since it can't be in either of these places? idk, ignoring for now
+		//POLYGON_CROP_EXCLUDE=NO
+    LOG_MESSAGE %TIMESTAMP%: Step6 done: Clipped Contours Generated
 
-// //9: EXPORT into DXF
-// //add %variable% export name
-// 	EXPORT_VECTOR \
-// 		FILENAME=%FOLDER%contour%TIMESTAMP%.dxf \
-// 		TYPE=DXF \
-// 		EXPORT_LAYER="obs_polygons"\
-// 	    EXPORT_LAYER="contours"\
-// 		SHAPE_TYPE=LINES \
-// 		GEN_PRJ_FILE=NO \
-// 		SPLIT_BY_ATTR=NO \
-// 		SPATIAL_RES_METERS=0.25\
-// 		FILENAME_ATTR_LIST="<Feature Name>"
-//     LOG_MESSAGE %TIMESTAMP%: Step 7 done: file exported to %FOLDER%.
+//9: EXPORT into DXF
+	EXPORT_VECTOR \
+		FILENAME=%FOLDER%contour%TIMESTAMP%.dxf \
+		TYPE=DXF \
+		EXPORT_LAYER="obs_polygons"\
+	    EXPORT_LAYER="contours"\
+		SHAPE_TYPE=LINES \
+		GEN_PRJ_FILE=NO \
+		SPLIT_BY_ATTR=NO \
+		SPATIAL_RES_METERS=0.25\
+		FILENAME_ATTR_LIST="<Feature Name>"
+     LOG_MESSAGE %TIMESTAMP%: Step 7 done: file exported to %FOLDER%.
 
 
-// //10: See new DXF
-// 	LAYER_LOOP_START                        //hides all other layers
-//         FILENAME="*" \
-//         VAR_NAME_PREFIX="HIDE" \
-// 	    SET_LAYER_OPTIONS \
-//             FILENAME="%HIDE_FNAME_W_DIR%" \
-//             HIDDEN=YES
-// 	LAYER_LOOP_END
-// 	import FILENAME=%FOLDER%contour%TIMESTAMP%.dxf
+//10: See new DXF
+	LAYER_LOOP_START                        //hides all other layers
+        FILENAME="*" \
+        VAR_NAME_PREFIX="HIDE" \
+	    SET_LAYER_OPTIONS \
+            FILENAME="%HIDE_FNAME_W_DIR%" \
+            HIDDEN=YES
+	LAYER_LOOP_END
+	import FILENAME=%FOLDER%contour%TIMESTAMP%.dxf
 
-LOG_MESSAGE  Process took %TIME_SINCE_START%
+LOG_MESSAGE  Process Complete; Elapsed time %TIME_SINCE_START%
