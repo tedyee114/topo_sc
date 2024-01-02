@@ -54,7 +54,7 @@ LOG_MESSAGE %TIMESTAMP%: Step1 MANUALLY SKIPPED!!!!: no pointcloud classificatio
         GRID_TYPE=ELEVATION\
         GRID_ALG=BIN_AVG\
         ELEV_UNITS=FEET\
-        SPATIAL_RES_METERS=1\
+        SPATIAL_RES_METERS=.1\
         NO_DATA_DIST_MULT=0
 LOG_MESSAGE %TIMESTAMP%: Step2 done: data_grid Generated
 
@@ -83,7 +83,7 @@ LOG_MESSAGE %TIMESTAMP%: Step3 MANUALLY SKIPPED!!!!: kml_grid should have been g
         COMBINE_OP=FILTER_KEEP_FIRST_IF_SECOND_INVALID\
         LAYER_DESC="obs_grid"\
         ELEV_UNITS=FEET\
-        SPATIAL_RES_METERS=.1
+        SPATIAL_RES_METERS=1
 LOG_MESSAGE %TIMESTAMP%: Step4 done: obstruction_grid generated
 
 
@@ -105,7 +105,7 @@ LOG_MESSAGE %TIMESTAMP%: Step5 done: grid>areas>simplify>lines
 	// 	AREA_UNITS="SQUARE FEET"\
 	// 	MEASURE_UNIT_TYPE=BASE
 
-    LAYER_LOOP_START FILENAME="obs_area" // VAR_NAME_PREFIX="HIDE"
+    LAYER_LOOP_START FILENAME="obs_area"
         IF COMPARE_STR="ENCLOSED AREA<200" COMPARE_NUM=YES
 		EDIT_VECTOR \
 		FILENAME="obs_area"\
@@ -149,15 +149,15 @@ LOG_MESSAGE %TIMESTAMP%: Step6 done: Clipped Contours Generated
 		SHAPE_TYPE=LINES \
 		GEN_PRJ_FILE=NO \
 		SPLIT_BY_ATTR=NO \
-		SPATIAL_RES_METERS=0.25\
+		SPATIAL_RES_METERS=1\
 		FILENAME_ATTR_LIST="<Feature Name>"\
-        POLYGON_CROP_FILE="kml"\
+        
 		POLYGON_CROP_USE_ALL=YES
 LOG_MESSAGE %TIMESTAMP%: Step 7 done: file exported to C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\output. Process took %TIME_SINCE_START%
 
 
 //10: Merge into main DXF?
-	LAYER_LOOP_START FILENAME="*" VAR_NAME_PREFIX="HIDE"
-	SET_LAYER_OPTIONS FILENAME="%HIDE_FNAME_W_DIR%" HIDDEN=YES
-	LAYER_LOOP_END
-	import FILENAME="C:\\Users\\ted_airworks.io\\Documents\\Scripts\\merged.dxf"
+//	LAYER_LOOP_START FILENAME="*" VAR_NAME_PREFIX="HIDE"
+//	SET_LAYER_OPTIONS FILENAME="%HIDE_FNAME_W_DIR%" HIDDEN=YES
+	//LAYER_LOOP_END
+	//import FILENAME="C:\\Users\\ted_airworks.io\\Documents\\Scripts\\output\\contour.dxf"
