@@ -79,12 +79,8 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
         COMBINE_OP=FILTER_KEEP_FIRST_IF_SECOND_INVALID\
         LAYER_DESC="obs_grid"\
         ELEV_UNITS=FEET\
-        SPATIAL_RES_METERS=1
-<<<<<<< HEAD
-LOG_MESSAGE %TIMESTAMP%: Step4 done: obstruction_grid generated
-=======
+        SPATIAL_RES_METERS=.1
     LOG_MESSAGE %TIMESTAMP%: Step4 done: obstruction_grid generated
->>>>>>> e7ab1482f41ab943f31150ea67c017fa2f3825cd
 
 
 //5: OBSTRUCTION GRID>areas>simplify>lines
@@ -96,16 +92,25 @@ LOG_MESSAGE %TIMESTAMP%: Step4 done: obstruction_grid generated
         FILENAME="obs_area"\
         CONVERT_AREAS_TO_LINES=YES\
 		SMOOTH_FEATURES=YES\
-		STYLE_ATTR="LINE_COLOR=RGB(255,0,0)"
+		STYLE_ATTR="LINE_COLOR=RGB(255,0,0)" \
+		MOVE_TO_NEW_LAYER=YES
+		NEW_LAYER_NAME="obs_polygons"
     LOG_MESSAGE %TIMESTAMP%: Step5 done: grid>areas>simplify>lines
 
-// //6: Delete islands smaller than 200 ft^2
-// 	// ADD_MEASURE_ATTRS \
-// 	// 	FILENAME="obs_area"\
-// 	// 	AREA_UNITS="SQUARE FEET"\
-// 	// 	MEASURE_UNIT_TYPE=BASE
+//6: Delete islands smaller than 200 sq ft
+ADD_MEASURE_ATTRS \
+	FILENAME="obs_polygons" \
+	AREA_UNITS="SQUARE FEET" \
+	MEASURE_UNIT_TYPE="BASE"    
 
-//     LAYER_LOOP_START FILENAME="obs_area"
+EDIT_VECTOR \
+	FILENAME="obs_polygons"\
+	DELETE_FEATURES=YES \
+	AREA_UNITS="SQUARE FEET" \
+	COMPARE_STR="ENCLOSED_AREA<225" \
+	COMPARE_NUM=YES
+
+//     LAYER_LOOP_START FILENAME="obs_polygons"
 //         IF COMPARE_STR="ENCLOSED AREA<200" COMPARE_NUM=YES
 // 			EDIT_VECTOR \
 // 			FILENAME="obs_area"\
@@ -133,7 +138,7 @@ LOG_MESSAGE %TIMESTAMP%: Step4 done: obstruction_grid generated
 //         MULT_MINOR=1\
 //         MULT_MAJOR=5\
 //         LAYER_DESC="contours"\
-// 		POLYGON_CROP_FILE="obs_area"\        //cropping to obs areas is the longest time, doing it during export is much faster but then they crop themselves. Maybe make two outputs to join in outer python script?
+// 		POLYGON_CROP_FILE="obs_polygons"\        //cropping to obs areas is the longest time, doing it during export is much faster but then they crop themselves. Maybe make two outputs to join in outer python script?
 // 		POLYGON_CROP_USE_ALL=YES\
 // 		POLYGON_CROP_EXCLUDE=YES
 // 		//POLYGON_CROP_FILE="kml"\           //cropping to the kml caused errors, both during contour generation and export
@@ -146,25 +151,11 @@ LOG_MESSAGE %TIMESTAMP%: Step4 done: obstruction_grid generated
 // 	EXPORT_VECTOR \
 // 		FILENAME=%FOLDER%contour%TIMESTAMP%.dxf \
 // 		TYPE=DXF \
-// 		EXPORT_LAYER="obs_area"\
+// 		EXPORT_LAYER="obs_polygons"\
 // 	    EXPORT_LAYER="contours"\
 // 		SHAPE_TYPE=LINES \
 // 		GEN_PRJ_FILE=NO \
 // 		SPLIT_BY_ATTR=NO \
-// <<<<<<< HEAD
-// 		SPATIAL_RES_METERS=1\
-// 		FILENAME_ATTR_LIST="<Feature Name>"\
-        
-// 		POLYGON_CROP_USE_ALL=YES
-// LOG_MESSAGE %TIMESTAMP%: Step 7 done: file exported to C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\output. Process took %TIME_SINCE_START%
-
-
-// //10: Merge into main DXF?
-// //	LAYER_LOOP_START FILENAME="*" VAR_NAME_PREFIX="HIDE"
-// //	SET_LAYER_OPTIONS FILENAME="%HIDE_FNAME_W_DIR%" HIDDEN=YES
-// 	//LAYER_LOOP_END
-// 	//import FILENAME="C:\\Users\\ted_airworks.io\\Documents\\Scripts\\output\\contour.dxf"
-// =======
 // 		SPATIAL_RES_METERS=0.25\
 // 		FILENAME_ATTR_LIST="<Feature Name>"
 //     LOG_MESSAGE %TIMESTAMP%: Step 7 done: file exported to %FOLDER%.
@@ -179,5 +170,5 @@ LOG_MESSAGE %TIMESTAMP%: Step4 done: obstruction_grid generated
 //             HIDDEN=YES
 // 	LAYER_LOOP_END
 // 	import FILENAME=%FOLDER%contour%TIMESTAMP%.dxf
-//     LOG_MESSAGE  Process took %TIME_SINCE_START%
-// >>>>>>> e7ab1482f41ab943f31150ea67c017fa2f3825cd
+
+LOG_MESSAGE  Process took %TIME_SINCE_START%
