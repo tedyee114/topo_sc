@@ -19,7 +19,7 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
     //END_IF
 
     // ELSE COMPARE_STR="%FILEORFOLDER%=YES"
-    DEFINE_VAR NAME="FOLDER" PROMPT=DIR ABORT_ON_CANCEL PROMPT_TEXT="Output Folder?"
+    DEFINE_VAR NAME="FOLDER" PROMPT=DIR ABORT_ON_CANCEL PROMPT_TEXT="Output Folder?"  VALUE="Documents\\scripts\\output\\"
     //DIR_LOOP_START DIRECTORY="%FOLDER%" FILENAME_MASKS= "*.tif" RECURSE_DIR=YES
     //IMPORT FILENAME="%FNAME_W_DIR%"
     //DIR_LOOP_END
@@ -33,7 +33,13 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
         RESULT_VAR=%UNITS% \
         METADATA_LAYER="pointcloud" \
         METADATA_ATTR="PROJ_UNITS"
-    DEFINE_VAR NAME="UNITS" PROMPT ABORT_ON_CANCEL PROMPT_TEXT="Detected pointcloud units were %UNITS%. Accept and continue? If not, please type 'feet' or 'meters' to override or click to cancel the whole script"
+    QUERY_LAYER_METADATA \
+        RESULT_VAR=%pc_epsg% \
+        METADATA_LAYER="pointcloud" \
+        METADATA_ATTR="EPSG_CODE"
+    LOG_MESSAGE Detected pointcloud units were %UNITS%. This will be used for all horizontal and vertical projections
+    DEFINE_VAR NAME="MINR" PROMPT ABORT_ON_CANCEL PROMPT_TEXT="Minor contour intervals in feet, suggested=1"
+    DEFINE_VAR NAME="MAJR" PROMPT ABORT_ON_CANCEL PROMPT_TEXT="Major contour intervals in feet, suggested=5"
 
 
 	// import FILENAME="%FOLDER%startfile.gmw"
@@ -94,22 +100,23 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
         FILENAME="obs_polygons"\
         CONVERT_AREAS_TO_LINES=YES\
 		SMOOTH_FEATURES=YES\
+        STYLE_ATTR="LINE_COLOR=RGB(255,0,0)"
     LOG_MESSAGE %TIMESTAMP%: Step5 done: grid>areas>simplify>lines
 
 
-//6: Delete islands smaller than 225 sq ft
+//6: Delete islands smaller than 200 sq ft
 	//adds area value to entity's attribute list
 	ADD_MEASURE_ATTRS \
 		FILENAME="obs_polygons" \
 		AREA_UNITS="SQUARE FEET" \
 		MEASURE_UNIT_TYPE="BASE"    
 	
-    //deletes entities with area attrubute smaller than 225sq ft
+    //deletes entities with area attrubute smaller than 200sq ft
 	EDIT_VECTOR \
 		FILENAME="obs_polygons"\
 		DELETE_FEATURES=YES \
 		AREA_UNITS="SQUARE FEET" \
-		COMPARE_STR="ENCLOSED_AREA<225" \
+		COMPARE_STR="ENCLOSED_AREA<200" \
 		COMPARE_NUM=YES
     LOG_MESSAGE %TIMESTAMP%: Step6 done: small islands removed
 
@@ -123,25 +130,26 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
         LAYER_BOUNDS="kml"\ 
         GRID_ALG=BIN_AVG\
         ELEV_UNITS=%UNITS%\
-        SPATIAL_RES_METERS=1\
+        SPATIAL_RES_METERS=%RES_M%\
         NO_DATA_DIST_MULT=3
     GENERATE_CONTOURS \
         FILENAME="loose_kml_grid_for_contours" \
-        INTERVAL=2\
-        MULT_MINOR=1\
-        MULT_MAJOR=5\
+        ELEV_UNITS=feet \
+        INTERVAL=1\
+        MULT_MINOR=%MINR%\
+        MULT_MAJOR=%MAJR%\
         LAYER_DESC="contours"\
 		POLYGON_CROP_FILE="obs_polygons"\        //cropping to obs areas is the longest time, doing it during export is much faster but then they crop themselves. Maybe make two outputs to join in outer python script?
 		POLYGON_CROP_USE_ALL=YES\
 		POLYGON_CROP_EXCLUDE=YES
-		//POLYGON_CROP_FILE="kml"\           //cropping to the kml caused errors, both during contour generation and export
-		//POLYGON_CROP_USE_ALL=YES\			 //maybe make it an edit_vector command since it can't be in either of these places? idk, ignoring for now
-		//POLYGON_CROP_EXCLUDE=NO
+		POLYGON_CROP_FILE="kml"\                 //cropping to the kml caused errors, both during contour generation and export
+		POLYGON_CROP_USE_ALL=YES\			     //maybe make it an edit_vector command since it can't be in either of these places? idk, ignoring for now
+		POLYGON_CROP_EXCLUDE=NO
     LOG_MESSAGE %TIMESTAMP%: Step6 done: Clipped Contours Generated
 
 //9: EXPORT into DXF
 	EXPORT_VECTOR \
-		FILENAME=%FOLDER%contour%TIMESTAMP%.dxf \
+		FILENAME=%FOLDER%contour.dxf \
 		TYPE=DXF \
 		EXPORT_LAYER="obs_polygons"\
 	    EXPORT_LAYER="contours"\
@@ -154,13 +162,13 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
 
 
 //10: See new DXF
-	LAYER_LOOP_START                        //hides all other layers
+	LAYER_LOOP_START                            //hides all other layers
         FILENAME="*" \
         VAR_NAME_PREFIX="HIDE" \
 	    SET_LAYER_OPTIONS \
             FILENAME="%HIDE_FNAME_W_DIR%" \
             HIDDEN=YES
 	LAYER_LOOP_END
-	import FILENAME=%FOLDER%contour%TIMESTAMP%.dxf
+	import FILENAME=%FOLDER%contour.dxf LOAD_PROJECTION PROJ=pc_epsg
 
 LOG_MESSAGE  Process Complete; Elapsed time %TIME_SINCE_START%
