@@ -139,10 +139,11 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
 		SAMPLING_METHOD=BOX_4x4 \
         SMOOTH_CONTOURS=YES \
         MIN_CONTOUR_LEN=6 \
-        LAYER_BOUNDS="kml" \
-        // POLYGON_CROP_FILE="obs_polygons"\
-		// POLYGON_CROP_USE_ALL=YES\
-		// POLYGON_CROP_EXCLUDE=YES
+        LAYER_BOUNDS="loose_data_grid_for_contours" \
+		FILL_GAPS=NO \
+        POLYGON_CROP_FILE="obs_polygons"\
+		POLYGON_CROP_USE_ALL=YES\
+		POLYGON_CROP_EXCLUDE=YES
     LOG_MESSAGE %TIMESTAMP%: Step7 done: Clipped Contours Generated
 
 //8: EXPORT into DXF
@@ -159,11 +160,11 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
         SPLIT_BY_ATTR="<Feature Desc>"
     EDIT_VECTOR \
         FILENAME="contours - Contour Line, Intermediate"\
-        STYLE_ATTR="LINE_COLOR=RGB(65,65,65)" \
+        STYLE_ATTR="LINE_COLOR=RGB(128,128,128)" \
 		ATTR_VAL="<Feature Desc>=G-TOPO-MINR"
     EDIT_VECTOR \
         FILENAME="contours - Contour Line, Major"\
-        STYLE_ATTR="LINE_COLOR=RGB(128,128,128)" \
+        STYLE_ATTR="LINE_COLOR=RGB(192,192,192)" \
 		ATTR_VAL="<Feature Desc>=G-TOPO-MAJR"
 
     
