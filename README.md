@@ -2,6 +2,7 @@
 Automated Global Mapper Topo Generation
 Created for use at Airworks Inc By Ted Yee, 2023
 There are 3 ways to generate contours, but only method 3 was completely finished
+To view this readme formatting correctly in GitHub, click View Code rather than preview mode
 
 **Only Global Mapper Versions 23 and above support scripting
 
