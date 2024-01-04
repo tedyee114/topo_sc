@@ -2,35 +2,101 @@
 GLOBAL_MAPPER_SCRIPT VERSION="1.00"
 
 //1 hard-coded file import
-IMPORT FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\2710.las"
-LOG_MESSAGE %TIMESTAMP%: Step1 done
+//IMPORT FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\2710.las"
+//LOG_MESSAGE %TIMESTAMP%: Step1 done
 
 //2 grid generation
-GENERATE_ELEV_GRID FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\2710.las"\
-	LAYER_DESC="data_grid"\
-	GRID_TYPE=ELEVATION\
-	GRID_ALG=BIN_AVG\
-	ELEV_UNITS=FEET\
-	SPATIAL_RES_METERS=0.9\
-	NO_DATA_DIST_MULT=0
-LOG_MESSAGE %TIMESTAMP%: Step2 done
+//GENERATE_ELEV_GRID FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\2710.las"\
+	//LAYER_DESC="data_grid"\
+	//GRID_TYPE=ELEVATION\
+	//GRID_ALG=BIN_AVG\
+	//ELEV_UNITS=FEET\
+	//SPATIAL_RES_METERS=0.9\
+	//NO_DATA_DIST_MULT=0
+//LOG_MESSAGE %TIMESTAMP%: Step2 done
 
 //3 contour generation
-GENERATE_CONTOURS \
-	FILENAME="data_grid" \
- 	INTERVAL=20 \
- 	LAYER_DESC="contours"
- LOG_MESSAGE %TIMESTAMP%: Step3 done
-
+ GENERATE_ELEV_GRID \
+        FILENAME="pointcloud" \
+        LAYER_DESC="loose_data_grid_for_contours"\
+        GRID_TYPE=ELEVATION\
+		LIDAR_FILTER=2\
+        LAYER_BOUNDS="kml"\ 
+        GRID_ALG=BIN_AVG\
+        ELEV_UNITS=feet\
+        SPATIAL_RES_METERS=.3\
+        NO_DATA_DIST_MULT=3
+    GENERATE_CONTOURS \
+        FILENAME="loose_data_grid_for_contours" \
+        ELEV_UNITS=feet \
+        INTERVAL=1\
+        MULT_MINOR=1\
+        MULT_MAJOR=5\
+        LAYER_DESC="contours"\
+		SAMPLING_METHOD=BOX_4x4 \
+        SMOOTH_CONTOURS=YES \
+        MIN_CONTOUR_LEN=6 \
 //4 dxf export
-EXPORT_VECTOR \
-	FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\output\\contour.dxf" \
-	TYPE=DXF \
-	EXPORT_LAYER="contours"\
-	SHAPE_TYPE=LINES \
-	GEN_PRJ_FILE=NO \
-	SPLIT_BY_ATTR=NO \
-	SPATIAL_RES_METERS=0.25\
-	FILENAME_ATTR_LIST="<Feature Name>" \
-	FILENAME_INCLUDE_ATTR_NAME=YES
-LOG_MESSAGE %TIMESTAMP%: Step4 done
+//EXPORT_VECTOR \
+	//FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\output\\contour.dxf" \
+	//TYPE=DXF \
+	//EXPORT_LAYER="contours"\
+	//SHAPE_TYPE=LINES \
+	//GEN_PRJ_FILE=NO \
+	//SPLIT_BY_ATTR=NO \
+	//SPATIAL_RES_METERS=0.25\
+	//FILENAME_ATTR_LIST="<Feature Name>" \
+	//FILENAME_INCLUDE_ATTR_NAME=YES
+//LOG_MESSAGE %TIMESTAMP%: Step4 done
+
+SPLIT_LAYER \
+        FILENAME="obs_polygons" \
+        SPLIT_BY_ATTR="<Feature Desc>"
+    EDIT_VECTOR \
+        FILENAME="obs_polygons - Unknown Line Type"\
+        STYLE_ATTR="LINE_COLOR=RGB(255,0,0)"
+    
+    SPLIT_LAYER \
+        FILENAME="contours" \
+        SPLIT_BY_ATTR="<Feature Desc>"
+    EDIT_VECTOR \
+        FILENAME="contours - Contour Line, Intermediate"\
+        STYLE_ATTR="LINE_COLOR=RGB(65,65,65)" \
+        MOVE_TO_NEW_LAYER=YES \
+        NEW_LAYER_NAME="G-TOPO-MINR"
+    EDIT_VECTOR \
+        FILENAME="contours - Contour Line, Major"\
+        STYLE_ATTR="LINE_COLOR=RGB(128,128,128)" \
+        MOVE_TO_NEW_LAYER=YES \
+        NEW_LAYER_NAME="G-TOPO-MAJR"
+
+    SPLIT_LAYER \
+        FILENAME="obs_polygons" \
+        SPLIT_BY_ATTR="<Feature Desc>"
+    EDIT_VECTOR \
+        FILENAME="obs_polygons - Unknown Line Type"\
+        STYLE_ATTR="LINE_COLOR=RGB(255,0,0)"
+    EXPORT_VECTOR \
+		FILENAME=%OUTPUTFOLDER%obslayer_contour.dxf \
+		TYPE=DXF \
+		EXPORT_LAYER="obs_polygons - Unknown Line Type"\
+	    EXPORT_LAYER="contours"\
+		SHAPE_TYPE=LINES \
+		GEN_PRJ_FILE=NO \
+		SPLIT_BY_ATTR=NO \
+		SPATIAL_RES_METERS=%RES_M%\
+		FILENAME_ATTR_LIST="<Feature Name>"
+     LOG_MESSAGE %TIMESTAMP%: Step8 done: file exported to %OUTPUTFOLDER%.
+
+
+//9: See new DXF and hide all other layers
+	LAYER_LOOP_START \
+        FILENAME="*" \
+        VAR_NAME_PREFIX="HIDE"
+    SET_LAYER_OPTIONS \
+        FILENAME="%HIDE_FNAME_W_DIR%" \
+        HIDDEN=YES
+	LAYER_LOOP_END
+	import FILENAME=%OUTPUTFOLDER%obslayer_contour.dxf USE_DEFAULT_PROJ=YES
+
+LOG_MESSAGE  Process Complete; Elapsed time %TIME_SINCE_START%
