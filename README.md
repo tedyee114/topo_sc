@@ -2,6 +2,7 @@
 Automated Global Mapper Topo Generation
 Created for use at Airworks Inc By Ted Yee, 2023
 There are 3 ways to generate contours, but only method 3 was completely finished
+To view this readme formatting correctly in GitHub, click View Code rather than preview mode
 
 **Only Global Mapper Versions 23 and above support scripting
 
@@ -35,12 +36,12 @@ There are 3 ways to generate contours, but only method 3 was completely finished
     |              |___________________________________________| |
     |____________________________________________________________|
 
-2.  a. Open Global Mapper Manual
+2.  a. Open Global Mapper manually
     b. Manually QC pointcloud classification (at least ground/class2 and nonground/any other class)
     c. Rename files as "kml", "kml_grid" (3d gridded kml), and "pointcloud" (tiles need to be all on one layer)
     d. User runs Topo_Script1.gms from within Global Mapper either by FILE>RUN SCRIPT or CTRL+SHIFT+O
-    e. User is prompted to input settings (which as a workaround are stored as attributes of the pointcloud file) and select base dxf. When selecting, prompt will appear as a "SAVE AS" box and ask if user wants to overwrite existing file. Click yes as nothing will be overwritten and it is just an unavoidable system feature
-    f. Obstruction Layer and Contours are generated
+    e. User is prompted to input settings (which as a workaround are stored as attributes of the pointcloud file) and select base dxf. When selecting, prompt will appear as a "SAVE AS" box and ask if user wants to overwrite existing file. This message is just an unavoidable system feature, just click yes, nothing will be overwritten
+    f. Obstruction Layer and Contours are automatically generated
     g. Contours are automatically clipped to obstruction layer (this takes a very long time and often creates errors, which is why this was scrapped)
     f. %OUTPUTFOLDER%basedxf_with_obs_contours.dxf is expoerted, then imported to Global Mapper for viewing
 
