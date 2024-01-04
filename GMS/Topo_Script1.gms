@@ -1,8 +1,9 @@
 //Set editing language set to C# in VScode so that // works for comments
 //Made by Ted Yee 2023-10-17 for Airworks Inc.
-// Must start with files named 'kml_grid'(already gridded), 'kml', 'pointcloud', 'overhang', and 'water'
-// Polygons limited to 99999 vertices, may need to raise that in the code
-// Units automatically taken from pointcloud and printed to the console, can only be changed via the code
+//Must start with files named 'kml_grid'(already gridded), 'kml', and 'pointcloud'
+//when selecting base file, it will ask if you want to overwrite the file, just ignore it
+//Polygons limited to 99999 vertices, may need to raise that in the code
+//Units automatically taken from pointcloud and printed to the console, can only be changed via the code
 
 GLOBAL_MAPPER_SCRIPT VERSION="1.00"
 //0: Enter Settings and Import Files (but they should already be open)
@@ -52,13 +53,15 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
         RESULT_VAR=%pc_epsg% \
         METADATA_LAYER="pointcloud" \
         METADATA_ATTR="EPSG_CODE"
+    
     LOG_MESSAGE Detected pointcloud units were %UNITS%. This will be used for all horizontal and vertical projections
-
     LOG_MESSAGE %TIMESTAMP%: Step0 Complete, startfile loaded
+
 
 //1: QC Pointcloud Classification
     //I could theoretically add an autoclassification, but that's not how we do it
     LOG_MESSAGE %TIMESTAMP%: Step1 MANUALLY SKIPPED!!!!: no pointcloud classification needed
+
 
 //2:  Create data_grid from ground points, buildings, and water polygons
     GENERATE_ELEV_GRID \
@@ -75,21 +78,26 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
         NO_DATA_DIST_MULT=0
     LOG_MESSAGE %TIMESTAMP%: Step2 done: data_grid Generated
 
-//3: Create KML GRID -- for now, the elevation grid must be added before the script.
-    // assign KML points elevations from any loaded terrain data (see page 96 https://www.bluemarblegeo.com/knowledgebase/global-mapper-21/GlobalMapper_ScriptingReference.pdf)
-    EDIT_VECTOR \
-        APPLY_ELEVS=YES \
-	    FILENAME="kml"\
+
+// //3: Create KML GRID -- for now, the elevation grid must be added before the script. // assign KML points elevations from any loaded terrain data (see page 96 https://www.bluemarblegeo.com/knowledgebase/global-mapper-21/GlobalMapper_ScriptingReference.pdf)
+    EDIT_VECTOR                         \
+        APPLY_ELEVS=YES                 \
+        ADD_EXISTING_ELEV=NO            \
+        INC_UNIT_SUFFIX=NO              \
+        REPLACE_EXISTING=NO             \
+        ELEV_ATTR="ELEV_1"              \
+	    FILENAME="kml"                  \
         REPLACE_EXISTING=YES
-    GENERATE_ELEV_GRID \
-        FILENAME="kml"\
-        LAYER_DESC="kml_grid"\
-        GRID_TYPE=ELEVATION\
-        GRID_ALG=BIN_AVG\
-        ELEV_UNITS=%UNITS%\
-        SPATIAL_RES_METERS=0.9\
+    GENERATE_ELEV_GRID                  \
+        FILENAME="kml"                  \
+        LAYER_DESC="kml_grid"           \
+        GRID_TYPE=ELEVATION             \
+        GRID_ALG=BIN_AVG                \
+        ELEV_UNITS=%UNITS%              \
+        SPATIAL_RES_METERS=0.9          \
         NO_DATA_DIST_MULT=0
     LOG_MESSAGE %TIMESTAMP%: Step3 MANUALLY SKIPPED!!!!: kml_grid should have been generated before script
+
 
 //4: KML GRID-MERGED GRID=OBSTRUCTION GRID
     COMBINE_TERRAIN \
@@ -131,6 +139,7 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
 		COMPARE_STR="ENCLOSED_AREA<%ISLANDMIN%" \
 		COMPARE_NUM=YES
 
+    //splits obstruction areas and polygons into separate layers and colors objects (does not change layer color)
     SPLIT_LAYER                                         \
         FILENAME="obs_areas"                            \
         SPLIT_BY_ATTR="<Feature Desc>"
@@ -167,7 +176,7 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
         SMOOTH_CONTOURS=YES \
         MIN_CONTOUR_LEN=6 \
         LAYER_BOUNDS="kml" \
-        POLYGON_CROP_FILE="obs_polygons"\        //cropping to obs areas is the longest time, doing it during export is much faster but then they crop themselves. Maybe make two outputs to join in outer python script?
+        POLYGON_CROP_FILE="obs_areas - Coverage/Quad"\
 		POLYGON_CROP_USE_ALL=YES\
 		POLYGON_CROP_EXCLUDE=YES
 
@@ -191,23 +200,21 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
 
     LOG_MESSAGE %TIMESTAMP%: Step7 done: UNClipped Contours Generated, split and individually colored, not whole layer colored
 
-LOG_MESSAGE  Process Complete; Elapsed time %TIME_SINCE_START% Please now crop the contours to the obs_polygons and then run the python scripto
+LOG_MESSAGE  Process Complete; Elapsed time %TIME_SINCE_START% Please now crop the contours to the obs_polygons, export and merge
 
 
 //9: Export 3 layers
     IMPORT FILENAME="%BASEDXF%"
-    EXPORT_VECTOR                                   \
+    EXPORT_ANY                                      \
 		FILENAME=%OUTPUTFOLDER%basedxf_with_obs_contours.dxf \
 		TYPE=DXF                                    \
 		EXPORT_LAYER="obs_polygons"                 \
 	    EXPORT_LAYER="G-TOPO-MINR"                  \
         EXPORT_LAYER="G-TOPO-MAJR"                  \
         EXPORT_LAYER="%BASEDXF%"                    \
-		SHAPE_TYPE=LINES                            \
 		GEN_PRJ_FILE=NO                             \
 		SPLIT_BY_ATTR=NO                            \
-		SPATIAL_RES_METERS=%RES_M%                  \
-		FILENAME_ATTR_LIST="<Feature Name>"
+		SPATIAL_RES_METERS=%RES_M%
     LOG_MESSAGE %TIMESTAMP%: Step9 done: file exported to %OUTPUTFOLDER%.
 
 
@@ -222,4 +229,4 @@ LOG_MESSAGE  Process Complete; Elapsed time %TIME_SINCE_START% Please now crop t
 	import FILENAME=%OUTPUTFOLDER%basedxf_with_obs_contours.dxf USE_DEFAULT_PROJ=YES
     LOG_MESSAGE %TIMESTAMP%: Step10 done: new file opened and other layers turned off
 
-LOG_MESSAGE  Process Complete; Elapsed time %TIME_SINCE_START%
+LOG_MESSAGE  Process Complete; Elapsed time: %TIME_SINCE_START%
