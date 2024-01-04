@@ -1,7 +1,16 @@
 # topo_sc
 Automated Global Mapper Topo Generation
 Created for use at Airworks Inc By Ted Yee, 2023
-There are two ways to generate contours:
+There are 3 ways to generate contours, but only method 3 was completely finished
+
+**Only Global Mapper Versions 23 and above support scripting
+
+**For scripting help in GlobalMapperSript:
+-https://ezdxf.readthedocs.io/en/stable/concepts/layers.html#layer-properties
+-https://www.bluemarblegeo.com/knowledgebase/global-mapper-21/GlobalMapper_ScriptingReference.pdf
+
+**For scripting help on writing inner script in python (Python to control Global Mapper)
+-https://www.bluemarblegeo.com/knowledgebase/global-mapper-python-24-1/index.html
 
 1.  a. Run an 'outer script' called called torunpythonfromterminal.py
         a. This specifies files for operation, without manual QC of pointcloud classification
@@ -12,20 +21,9 @@ There are two ways to generate contours:
             4. Outputted file of contours.dxf is stylized
             5. contour_stylized.dxf is merged into specified base dxf
         c. Note that this process is completely autonomous and trusts completely in pointcloud's classfication, not company procedure
-
-2.  a. Open Global Mapper Manual
-    b. Manually QC pointcloud classification (at least ground/class2 and nonground/any other class)
-    c. Rename files as "kml" (3d gridded kml), "pointcloud", "overhang", "water" if exist
-        1. Note that there in future could be a way to detect these files, grid the kml, and split the base dxf automatically, but hasn't been built yet
-        2. Note that currently, for testing ease, some of these things are hardcoded, i.e. a saved workspace with these layers is told to open rather than rebuilding each time
-    d. User runs script (the 'inner script') from within Global Mapper either by FILE>RUN SCRIPT or CTRL+SHIFT+O
-    e. contours.dxf is outputted into documents/scripts/topo_sc/output, but is not stylized
-    f. Manually stylie and merge dxfs
-
-**Only Global Mapper Versions 23 and above support scripting
-** There are two scripts. The outer script (torunpythonfromterminal.py) can be replaced by any script completing the same functions written in any language.\
+    ** There are two scripts. The outer script (torunpythonfromterminal.py) can be replaced by any script completing the same functions written in any language.\
     The 'inner script' referenced above can be written in either Python (.py) or GlobalMapperScript (.gms), it does not have to match the outer script.\
-    For option 1, the setup is a script running global mapper running an inner script on a file, or graphically as below:
+    For option 1, the setup is a commandline script, running global mapper, running an inner script, on a file, or graphically as below:
 
     ______________________________________________________________
     |              _____________________________________________ |
@@ -37,9 +35,15 @@ There are two ways to generate contours:
     |              |___________________________________________| |
     |____________________________________________________________|
 
-**For scripting help in GlobalMapperSript:
--https://ezdxf.readthedocs.io/en/stable/concepts/layers.html#layer-properties
--https://www.bluemarblegeo.com/knowledgebase/global-mapper-21/GlobalMapper_ScriptingReference.pdf
+2.  a. Open Global Mapper Manual
+    b. Manually QC pointcloud classification (at least ground/class2 and nonground/any other class)
+    c. Rename files as "kml", "kml_grid" (3d gridded kml), and "pointcloud" (tiles need to be all on one layer)
+    d. User runs Topo_Script1.gms from within Global Mapper either by FILE>RUN SCRIPT or CTRL+SHIFT+O
+    e. User is prompted to input settings (which as a workaround are stored as attributes of the pointcloud file) and select base dxf. When selecting, prompt will appear as a "SAVE AS" box and ask if user wants to overwrite existing file. Click yes as nothing will be overwritten and it is just an unavoidable system feature
+    f. Obstruction Layer and Contours are generated
+    g. Contours are automatically clipped to obstruction layer (this takes a very long time and often creates errors, which is why this was scrapped)
+    f. %OUTPUTFOLDER%basedxf_with_obs_contours.dxf is expoerted, then imported to Global Mapper for viewing
 
-**For scripting help on writing inner script in python (Python to control Global Mapper)
--https://www.bluemarblegeo.com/knowledgebase/global-mapper-python-24-1/index.html
+3.  Same a-f as Option 2, but then...
+    g. User hears sound, manually crops contours to obstruction layer
+    h. User either manually exports, recolors, and merges files or runs Topo_Script2.gms to do all of that
