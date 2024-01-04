@@ -23,11 +23,26 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
     //     FILENAME="base_file" \
     //     SPLIT_BY_ATTR=<Feature Desc>
 
+    DEFINE_VAR NAME="BASEDXF" PROMPT=FILE ABORT_ON_CANCEL PROMPT_TEXT="Base DXF (contains B-OVERHANG, W-WATER and will be merged with A-OBSTRUCTION and G-TOPO-...?"
     DEFINE_VAR NAME="OUTPUTFOLDER" PROMPT=DIR ABORT_ON_CANCEL PROMPT_TEXT="Output Folder?"
     DEFINE_VAR NAME="RES_M" PROMPT ABORT_ON_CANCEL PROMPT_TEXT="Enter spatial resolution in meters for data_grid, obs_grid and output. Suggested 0.3"
     DEFINE_VAR NAME="ISLANDMIN" PROMPT ABORT_ON_CANCEL PROMPT_TEXT="Enter minimum area size of obstuction layer in sq ft. Suggested 200"
     DEFINE_VAR NAME="MINR" PROMPT ABORT_ON_CANCEL PROMPT_TEXT="Minor contour intervals in feet, suggested=1"
     DEFINE_VAR NAME="MAJR" PROMPT ABORT_ON_CANCEL PROMPT_TEXT="Major contour intervals in feet, suggested=5"
+    //splits base dxf and extracts overhang and water layers
+    IMPORT FILENAME="%BASEDXF%"  USE_DEFAULT_PROJ=YES
+    SPLIT_LAYER                                         \
+        FILENAME="%BASEDXF%"                            \
+        SPLIT_BY_ATTR="<Feature Desc>"
+    EDIT_VECTOR                                         \
+        FILENAME="*B-OVERHANG"                          \
+        MOVE_TO_NEW_LAYER=YES                           \
+        NEW_LAYER_NAME="overhang"
+    EDIT_VECTOR                                         \
+        FILENAME="*W-WATER"                             \
+        MOVE_TO_NEW_LAYER=YES                           \
+        NEW_LAYER_NAME="water"
+
     //rest of the bllock finds and sets the units
     QUERY_LAYER_METADATA \
         RESULT_VAR=%UNITS% \
@@ -61,19 +76,19 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
     LOG_MESSAGE %TIMESTAMP%: Step2 done: data_grid Generated
 
 //3: Create KML GRID -- for now, the elevation grid must be added before the script.
-    //assign KML points elevations
-    //EDIT_VECTOR \
-      //APPLY_ELEVS \
-	  //  FILENAME="kml"\
-        //ELEV_LAYER="2710.las (DTM Elevation Values)"   //can see sample scripts page 96 of pdf
-    // GENERATE_ELEV_GRID\
-    //     FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\merlin_el.dxf"\
-    //     LAYER_DESC="kml_grid"\
-    //     GRID_TYPE=ELEVATION\
-    //     GRID_ALG=BIN_AVG\
-    //     ELEV_UNITS=%UNITS%\
-    //     SPATIAL_RES_METERS=0.9\
-    //     NO_DATA_DIST_MULT=0
+    // assign KML points elevations from any loaded terrain data (see page 96 https://www.bluemarblegeo.com/knowledgebase/global-mapper-21/GlobalMapper_ScriptingReference.pdf)
+    EDIT_VECTOR \
+        APPLY_ELEVS=YES \
+	    FILENAME="kml"\
+        REPLACE_EXISTING=YES
+    GENERATE_ELEV_GRID \
+        FILENAME="kml"\
+        LAYER_DESC="kml_grid"\
+        GRID_TYPE=ELEVATION\
+        GRID_ALG=BIN_AVG\
+        ELEV_UNITS=%UNITS%\
+        SPATIAL_RES_METERS=0.9\
+        NO_DATA_DIST_MULT=0
     LOG_MESSAGE %TIMESTAMP%: Step3 MANUALLY SKIPPED!!!!: kml_grid should have been generated before script
 
 //4: KML GRID-MERGED GRID=OBSTRUCTION GRID
@@ -90,11 +105,11 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
 //5: OBSTRUCTION GRID>areas>simplify>lines
     GENERATE_LAYER_BOUNDS \
         FILENAME="obs_grid"\
-        LAYER_DESC="obs_polygons"\
+        LAYER_DESC="obs_areas"\
         BOUNDS_TYPE=POLYGON\
 		MAX_VERTEX_COUNT=99999
     EDIT_VECTOR \
-        FILENAME="obs_polygons"\
+        FILENAME="obs_areas"\
         CONVERT_AREAS_TO_LINES=YES\
 		SMOOTH_FEATURES=YES\
         STYLE_ATTR="LINE_COLOR=RGB(255,0,0)"
@@ -104,17 +119,29 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
 //6: Delete islands smaller than %ISLANDMIN% sq ft
 	//adds area value to entity's attribute list
 	ADD_MEASURE_ATTRS \
-		FILENAME="obs_polygons" \
+		FILENAME="obs_areas" \
 		AREA_UNITS="SQUARE FEET" \
 		MEASURE_UNIT_TYPE="BASE"    
 	
     //deletes entities with area attrubute smaller than %ISLANDMIN% sq ft
 	EDIT_VECTOR \
-		FILENAME="obs_polygons"\
+		FILENAME="obs_areas"\
 		DELETE_FEATURES=YES \
 		AREA_UNITS="SQUARE FEET" \
 		COMPARE_STR="ENCLOSED_AREA<%ISLANDMIN%" \
 		COMPARE_NUM=YES
+
+    SPLIT_LAYER                                         \
+        FILENAME="obs_areas"                            \
+        SPLIT_BY_ATTR="<Feature Desc>"
+
+    EDIT_VECTOR                                         \
+        FILENAME="obs_areas - Unknown Line Type"        \
+		ATTR_VAL="<Feature Desc>=A-OBSTRUCTION"         \
+        STYLE_ATTR="LINE_COLOR=RGB(255,0,0)"            \
+        MOVE_TO_NEW_LAYER=YES                           \
+		NEW_LAYER_NAME="obs_polygons"
+    
     LOG_MESSAGE %TIMESTAMP%: Step6 done: small islands removed
 
 
@@ -139,51 +166,52 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
 		SAMPLING_METHOD=BOX_4x4 \
         SMOOTH_CONTOURS=YES \
         MIN_CONTOUR_LEN=6 \
-        LAYER_BOUNDS="loose_data_grid_for_contours" \
-		FILL_GAPS=NO \
-        POLYGON_CROP_FILE="obs_polygons"\
+        LAYER_BOUNDS="kml" \
+        POLYGON_CROP_FILE="obs_polygons"\        //cropping to obs areas is the longest time, doing it during export is much faster but then they crop themselves. Maybe make two outputs to join in outer python script?
 		POLYGON_CROP_USE_ALL=YES\
 		POLYGON_CROP_EXCLUDE=YES
-    LOG_MESSAGE %TIMESTAMP%: Step7 done: Clipped Contours Generated
 
-//8: EXPORT into DXF
-	SPLIT_LAYER \
-        FILENAME="obs_polygons" \
+    SPLIT_LAYER                                         \
+        FILENAME="contours"                             \
         SPLIT_BY_ATTR="<Feature Desc>"
-    EDIT_VECTOR \
-        FILENAME="obs_polygons - Unknown Line Type"\
-        STYLE_ATTR="LINE_COLOR=RGB(255,0,0)" \
-		ATTR_VAL="<Feature Desc>=A-OBSTRUCTION"
     
-    SPLIT_LAYER \
-        FILENAME="contours" \
-        SPLIT_BY_ATTR="<Feature Desc>"
-    EDIT_VECTOR \
+    EDIT_VECTOR                                         \
         FILENAME="contours - Contour Line, Intermediate"\
-        STYLE_ATTR="LINE_COLOR=RGB(128,128,128)" \
-		ATTR_VAL="<Feature Desc>=G-TOPO-MINR"
-    EDIT_VECTOR \
-        FILENAME="contours - Contour Line, Major"\
-        STYLE_ATTR="LINE_COLOR=RGB(192,192,192)" \
-		ATTR_VAL="<Feature Desc>=G-TOPO-MAJR"
+		ATTR_VAL="<Feature Desc>=G-TOPO-MINR"           \
+        STYLE_ATTR="LINE_COLOR=RGB(128,128,128)"        \
+        MOVE_TO_NEW_LAYER=YES                           \
+		NEW_LAYER_NAME="G-TOPO-MINR"
 
-    
-    EXPORT_VECTOR \
-		FILENAME=%OUTPUTFOLDER%obslayer_contour.dxf \
-		TYPE=DXF \
-		EXPORT_LAYER="obs_polygons - Unknown Line Type"\
-	    EXPORT_LAYER="contours - Contour Line, Intermediate" \
-        EXPORT_LAYER="contours - Contour Line, Major" \
-		SHAPE_TYPE=LINES \
-		GEN_PRJ_FILE=NO \
-		SPLIT_BY_ATTR=NO \
-		SPATIAL_RES_METERS=%RES_M%\
+    EDIT_VECTOR                                         \
+        FILENAME="contours - Contour Line, Major"       \
+		ATTR_VAL="<Feature Desc>=G-TOPO-MAJR"           \
+        STYLE_ATTR="LINE_COLOR=RGB(192,192,192)"        \
+        MOVE_TO_NEW_LAYER=YES                           \
+		NEW_LAYER_NAME="G-TOPO-MAJR"
+
+    LOG_MESSAGE %TIMESTAMP%: Step7 done: UNClipped Contours Generated, split and individually colored, not whole layer colored
+
+LOG_MESSAGE  Process Complete; Elapsed time %TIME_SINCE_START% Please now crop the contours to the obs_polygons and then run the python scripto
+
+
+//9: Export 3 layers
+    IMPORT FILENAME="%BASEDXF%"
+    EXPORT_VECTOR                                   \
+		FILENAME=%OUTPUTFOLDER%basedxf_with_obs_contours.dxf \
+		TYPE=DXF                                    \
+		EXPORT_LAYER="obs_polygons"                 \
+	    EXPORT_LAYER="G-TOPO-MINR"                  \
+        EXPORT_LAYER="G-TOPO-MAJR"                  \
+        EXPORT_LAYER="%BASEDXF%"                    \
+		SHAPE_TYPE=LINES                            \
+		GEN_PRJ_FILE=NO                             \
+		SPLIT_BY_ATTR=NO                            \
+		SPATIAL_RES_METERS=%RES_M%                  \
 		FILENAME_ATTR_LIST="<Feature Name>"
-     LOG_MESSAGE %TIMESTAMP%: Step8 done: file exported to %OUTPUTFOLDER%.
+    LOG_MESSAGE %TIMESTAMP%: Step9 done: file exported to %OUTPUTFOLDER%.
 
 
-
-//9: See new DXF and hide all other layers
+//10: See new DXF and hide all other layers
 	LAYER_LOOP_START \
         FILENAME="*" \
         VAR_NAME_PREFIX="HIDE"
@@ -191,6 +219,7 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
         FILENAME="%HIDE_FNAME_W_DIR%" \
         HIDDEN=YES
 	LAYER_LOOP_END
-	import FILENAME=%OUTPUTFOLDER%obslayer_contour.dxf USE_DEFAULT_PROJ=YES
+	import FILENAME=%OUTPUTFOLDER%basedxf_with_obs_contours.dxf USE_DEFAULT_PROJ=YES
+    LOG_MESSAGE %TIMESTAMP%: Step10 done: new file opened and other layers turned off
 
 LOG_MESSAGE  Process Complete; Elapsed time %TIME_SINCE_START%
