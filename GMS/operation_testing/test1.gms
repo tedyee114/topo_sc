@@ -30,9 +30,9 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
     DEFINE_VAR NAME="MINR" PROMPT ABORT_ON_CANCEL PROMPT_TEXT="Minor contour intervals in feet, suggested=1"
     DEFINE_VAR NAME="MAJR" PROMPT ABORT_ON_CANCEL PROMPT_TEXT="Major contour intervals in feet, suggested=5"
     //splits base dxf and extracts overhang and water layers
-    IMPORT FILENAME="%BASEDXF%"
+    IMPORT FILENAME="%BASEDXF%"  USE_DEFAULT_PROJ=YES
     SPLIT_LAYER                                         \
-        FILENAME="BASEDXF"                              \
+        FILENAME="%BASEDXF%"                            \
         SPLIT_BY_ATTR="<Feature Desc>"
     EDIT_VECTOR                                         \
         FILENAME="*B-OVERHANG"                          \
@@ -81,8 +81,8 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
         APPLY_ELEVS=YES \
 	    FILENAME="kml"\
         REPLACE_EXISTING=YES
-    GENERATE_ELEV_GRID\
-        FILENAME="C:\\Users\\AirWorksProcessing\\Documents\\Scripts\\merlin_el.dxf"\
+    GENERATE_ELEV_GRID \
+        FILENAME="kml"\
         LAYER_DESC="kml_grid"\
         GRID_TYPE=ELEVATION\
         GRID_ALG=BIN_AVG\
@@ -130,6 +130,18 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
 		AREA_UNITS="SQUARE FEET" \
 		COMPARE_STR="ENCLOSED_AREA<%ISLANDMIN%" \
 		COMPARE_NUM=YES
+
+    SPLIT_LAYER                                         \
+        FILENAME="obs_areas"                            \
+        SPLIT_BY_ATTR="<Feature Desc>"
+
+    EDIT_VECTOR                                         \
+        FILENAME="obs_areas - Unknown Line Type"        \
+		ATTR_VAL="<Feature Desc>=A-OBSTRUCTION"         \
+        STYLE_ATTR="LINE_COLOR=RGB(255,0,0)"            \
+        MOVE_TO_NEW_LAYER=YES                           \
+		NEW_LAYER_NAME="obs_polygons"
+    
     LOG_MESSAGE %TIMESTAMP%: Step6 done: small islands removed
 
 
@@ -155,22 +167,13 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
         SMOOTH_CONTOURS=YES \
         MIN_CONTOUR_LEN=6 \
         LAYER_BOUNDS="kml" \
-    LOG_MESSAGE %TIMESTAMP%: Step7 done: UNClipped Contours Generated
+        POLYGON_CROP_FILE="obs_polygons"\        //cropping to obs areas is the longest time, doing it during export is much faster but then they crop themselves. Maybe make two outputs to join in outer python script?
+		POLYGON_CROP_USE_ALL=YES\
+		POLYGON_CROP_EXCLUDE=YES
 
-//8: Split and adjust output layers
-	SPLIT_LAYER                                         \
-        FILENAME="obs_areas"                            \
-        SPLIT_BY_ATTR="<Feature Desc>"
     SPLIT_LAYER                                         \
         FILENAME="contours"                             \
         SPLIT_BY_ATTR="<Feature Desc>"
-
-    EDIT_VECTOR                                         \
-        FILENAME="obs_areas - Unknown Line Type"        \
-		ATTR_VAL="<Feature Desc>=A-OBSTRUCTION"         \
-        STYLE_ATTR="LINE_COLOR=RGB(255,0,0)"            \
-        MOVE_TO_NEW_LAYER=YES                           \
-		NEW_LAYER_NAME="obs_polygons"
     
     EDIT_VECTOR                                         \
         FILENAME="contours - Contour Line, Intermediate"\
@@ -182,10 +185,11 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
     EDIT_VECTOR                                         \
         FILENAME="contours - Contour Line, Major"       \
 		ATTR_VAL="<Feature Desc>=G-TOPO-MAJR"           \
-        STYLE_ATTR="LINE_COLOR=RGB(192,192,192)"            \
+        STYLE_ATTR="LINE_COLOR=RGB(192,192,192)"        \
         MOVE_TO_NEW_LAYER=YES                           \
 		NEW_LAYER_NAME="G-TOPO-MAJR"
-    LOG_MESSAGE %TIMESTAMP%: Step8 done: Layers split and individually colored, not whole layer colored
+
+    LOG_MESSAGE %TIMESTAMP%: Step7 done: UNClipped Contours Generated, split and individually colored, not whole layer colored
 
 LOG_MESSAGE  Process Complete; Elapsed time %TIME_SINCE_START% Please now crop the contours to the obs_polygons and then run the python scripto
 
@@ -218,4 +222,4 @@ LOG_MESSAGE  Process Complete; Elapsed time %TIME_SINCE_START% Please now crop t
 	import FILENAME=%OUTPUTFOLDER%basedxf_with_obs_contours.dxf USE_DEFAULT_PROJ=YES
     LOG_MESSAGE %TIMESTAMP%: Step10 done: new file opened and other layers turned off
 
-LOG_MESSAGE  Process Complete; Elapsed time %TIME_SINCE_START% Please now crop the contours to the obs_polygons and then run the python script
+LOG_MESSAGE  Process Complete; Elapsed time %TIME_SINCE_START%
