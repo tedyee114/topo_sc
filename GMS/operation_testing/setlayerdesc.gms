@@ -1,1 +1,1 @@
-EDIT_VECTOR FILENAME="G-TOPO-MINR" ATTR_VAL="<Feature Desc>=A34".
+EDIT_VECTOR FILENAME="contours - Contour Line, Intermediate" ATTR_VAL="<Feature Desc>=A34".

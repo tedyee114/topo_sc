@@ -139,7 +139,7 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
 		SAMPLING_METHOD=BOX_4x4 \
         SMOOTH_CONTOURS=YES \
         MIN_CONTOUR_LEN=6 \
-        // LAYER_BOUNDS="kml" \
+        LAYER_BOUNDS="kml" \
         // POLYGON_CROP_FILE="obs_polygons"\
 		// POLYGON_CROP_USE_ALL=YES\
 		// POLYGON_CROP_EXCLUDE=YES
@@ -151,7 +151,8 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
         SPLIT_BY_ATTR="<Feature Desc>"
     EDIT_VECTOR \
         FILENAME="obs_polygons - Unknown Line Type"\
-        STYLE_ATTR="LINE_COLOR=RGB(255,0,0)"
+        STYLE_ATTR="LINE_COLOR=RGB(255,0,0)" \
+		ATTR_VAL="<Feature Desc>=A-OBSTRUCTION"
     
     SPLIT_LAYER \
         FILENAME="contours" \
@@ -159,32 +160,26 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
     EDIT_VECTOR \
         FILENAME="contours - Contour Line, Intermediate"\
         STYLE_ATTR="LINE_COLOR=RGB(65,65,65)" \
-        MOVE_TO_NEW_LAYER=YES \
-        NEW_LAYER_NAME="G-TOPO-MINR"
+		ATTR_VAL="<Feature Desc>=G-TOPO-MINR"
     EDIT_VECTOR \
         FILENAME="contours - Contour Line, Major"\
         STYLE_ATTR="LINE_COLOR=RGB(128,128,128)" \
-        MOVE_TO_NEW_LAYER=YES \
-        NEW_LAYER_NAME="G-TOPO-MAJR"
+		ATTR_VAL="<Feature Desc>=G-TOPO-MAJR"
 
-    SPLIT_LAYER \
-        FILENAME="obs_polygons" \
-        SPLIT_BY_ATTR="<Feature Desc>"
-    EDIT_VECTOR \
-        FILENAME="obs_polygons - Unknown Line Type"\
-        STYLE_ATTR="LINE_COLOR=RGB(255,0,0)"
+    
     EXPORT_VECTOR \
 		FILENAME=%OUTPUTFOLDER%obslayer_contour.dxf \
 		TYPE=DXF \
 		EXPORT_LAYER="obs_polygons - Unknown Line Type"\
-	    EXPORT_LAYER="G-TOPO-MINR" \
-        EXPORT_LAYER="G-TOPO-MAJR" \
+	    EXPORT_LAYER="contours - Contour Line, Intermediate" \
+        EXPORT_LAYER="contours - Contour Line, Major" \
 		SHAPE_TYPE=LINES \
 		GEN_PRJ_FILE=NO \
 		SPLIT_BY_ATTR=NO \
 		SPATIAL_RES_METERS=%RES_M%\
 		FILENAME_ATTR_LIST="<Feature Name>"
      LOG_MESSAGE %TIMESTAMP%: Step8 done: file exported to %OUTPUTFOLDER%.
+
 
 
 //9: See new DXF and hide all other layers

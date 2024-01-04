@@ -151,16 +151,16 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
         SPLIT_BY_ATTR="<Feature Desc>"
     EDIT_VECTOR \
         FILENAME="obs_polygons - Unknown Line Type"\
-        STYLE_ATTR="LINE_COLOR=RGB(255,0,0)"
+        STYLE_ATTR="LINE_COLOR=RGB(255,0,0)" \
 		ATTR_VAL="<Feature Desc>=A-OBSTRUCTION"
     
     SPLIT_LAYER \
         FILENAME="contours" \
-        SPLIT_BY_ATTR="<Feature Desc>"\
+        SPLIT_BY_ATTR="<Feature Desc>"
     EDIT_VECTOR \
         FILENAME="contours - Contour Line, Intermediate"\
         STYLE_ATTR="LINE_COLOR=RGB(65,65,65)" \
-        ATTR_VAL="<Feature Desc>=G-TOPO-MINR"
+		ATTR_VAL="<Feature Desc>=G-TOPO-MINR"
     EDIT_VECTOR \
         FILENAME="contours - Contour Line, Major"\
         STYLE_ATTR="LINE_COLOR=RGB(128,128,128)" \
@@ -171,8 +171,8 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
 		FILENAME=%OUTPUTFOLDER%obslayer_contour.dxf \
 		TYPE=DXF \
 		EXPORT_LAYER="obs_polygons - Unknown Line Type"\
-	    EXPORT_LAYER="G-TOPO-MINR" \
-        EXPORT_LAYER="G-TOPO-MAJR" \
+	    EXPORT_LAYER="contours - Contour Line, Intermediate" \
+        EXPORT_LAYER="contours - Contour Line, Major" \
 		SHAPE_TYPE=LINES \
 		GEN_PRJ_FILE=NO \
 		SPLIT_BY_ATTR=NO \
