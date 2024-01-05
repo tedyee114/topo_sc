@@ -58,6 +58,11 @@ There are 3 ways to generate contours, but only method 3 was chosen and complete
     f. %OUTPUTFOLDER%basedxf_with_obs_contours.dxf is exported, then imported to Global Mapper for viewing
 
 
-3.  Same a-f as Option 2, but then...
-    g. User hears sound, manually crops layers 'G-TOPO-MINR' and 'G-TOPO-MAJR' to 'obs_areas - Unknown Line Type'
+3.  a. Open Global Mapper manually
+    b. Manually QC pointcloud classification (at least ground/class2 and nonground/any other class)
+    c. Rename files as "kml", "kml_grid" (already 3d gridded kml), and "pointcloud" (tiles need to be all on one layer)
+    d. User runs Topo_Script1.gms from within Global Mapper either by FILE>RUN SCRIPT or CTRL+SHIFT+O
+    e. User is prompted to input settings and select base dxf (one created in AutoCAD with building, road, walk etc layers). When selecting, prompt will appear as a "SAVE AS" box and ask if user wants to overwrite existing file. This message is a false unavoidable system feature, just click yes, nothing will actually be overwritten
+    f. Obstruction Layer and uncropped Contours are automatically generated and User hears sound when complete
+    g. User manually crops layers 'G-TOPO-MINR' and 'G-TOPO-MAJR' to 'obs_areas - Unknown Line Type' via SELECT all 3 layers>CROP/COMBINE/SPLIT>CROP TO SELECTED AREA FEATURES>EXCLUDE+MARK AS DELETED>OK
     h. User either manually exports, recolors, and merges files or runs Topo_Script2.gms to do all of that
