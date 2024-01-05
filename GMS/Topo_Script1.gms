@@ -1,22 +1,21 @@
 //Set editing language set to C# in VScode so that // works for comments
 //Made by Ted Yee 2023-10-17 for Airworks Inc.
+//This is Part 1 of the topo gneration script
 //Must start with files named 'kml_grid'(already gridded), 'kml', and 'pointcloud'
-//when selecting base file, it will ask if you want to overwrite the file, just ignore it
+//When selecting base file, it will ask if you want to overwrite the file, just ignore it
 //Polygons limited to 99999 vertices, may need to raise that in the code
 //Units automatically taken from pointcloud and printed to the console, can only be changed via the code
 
 GLOBAL_MAPPER_SCRIPT VERSION="1.00"
 //0: Enter Settings and store them as attributes of the pointcloud file, split layers, Import Files (but they should already be open)
+                // //this commented out block is only used if automatic cropping is implemented in the future
+                // DEFINE_VAR NAME="OUTPUTFOLDER" PROMPT=DIR ABORT_ON_CANCEL PROMPT_TEXT="Output Folder?"
+                //     EDIT_VECTOR                                     \
+                //     FILENAME="pointcloud"                           \
+                // 	ATTR_VAL="OUTPUTFOLDER=%OUTPUTFOLDER%"
     DEFINE_VAR NAME="BASEDXF" PROMPT=FILE ABORT_ON_CANCEL PROMPT_TEXT="Base DXF (contains B-OVERHANG, W-WATER and will be merged with A-OBSTRUCTION and G-TOPO-...?"
     IMPORT FILENAME="%BASEDXF%"  USE_DEFAULT_PROJ=YES
-    DEFINE_VAR NAME="OUTPUTFOLDER" PROMPT=DIR ABORT_ON_CANCEL PROMPT_TEXT="Output Folder?"
-        EDIT_VECTOR                                     \
-        FILENAME="pointcloud"                           \
-		ATTR_VAL="OUTPUTFOLDER=%OUTPUTFOLDER%"
     DEFINE_VAR NAME="RES_M" PROMPT ABORT_ON_CANCEL PROMPT_TEXT="Enter spatial resolution in meters for data_grid, obs_grid and output. Suggested 0.3"
-        EDIT_VECTOR                                     \
-        FILENAME="pointcloud"                           \
-		ATTR_VAL="RES_M=%RES_M%" 
     DEFINE_VAR NAME="ISLANDMIN" PROMPT ABORT_ON_CANCEL PROMPT_TEXT="Enter minimum area size of obstuction layer in sq ft. Suggested 200"
     DEFINE_VAR NAME="MINR" PROMPT ABORT_ON_CANCEL PROMPT_TEXT="Minor contour intervals in feet, suggested=1"
     DEFINE_VAR NAME="MAJR" PROMPT ABORT_ON_CANCEL PROMPT_TEXT="Major contour intervals in feet, suggested=5"
@@ -75,7 +74,7 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
         ADD_EXISTING_ELEV=NO            \
         INC_UNIT_SUFFIX=NO              \
         REPLACE_EXISTING=NO             \
-        ELEV_ATTR="ELEV_1"              \
+        ELEV_ATTR="ELEVATION"              \
 	    FILENAME="kml"                  \
         REPLACE_EXISTING=YES
     GENERATE_ELEV_GRID                  \
@@ -166,12 +165,12 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
         SMOOTH_CONTOURS=YES                             \
         MIN_CONTOUR_LEN=6                               \
         LAYER_BOUNDS="kml"
-        //  //these three lines make for automatic contour line cropping, but take forever and are full of errors, hence the 2-part script
+        //  //these three lines are for automatic contour cropping, but take forever and are full of errors, which is why the 2-part script is necessary
         // POLYGON_CROP_FILE="obs_areas - Coverage/Quad"   \
 		// POLYGON_CROP_USE_ALL=YES                        \
 		// POLYGON_CROP_EXCLUDE=YES
 
-    //splits, recolors, though individually, not by layer, and renames contour lines
+    //splits, renames and individually recolors though not by layer, contour lines
     SPLIT_LAYER                                         \
         FILENAME="contours"                             \
         SPLIT_BY_ATTR="<Feature Desc>"
@@ -190,29 +189,60 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
         MOVE_TO_NEW_LAYER=YES                           \
 		NEW_LAYER_NAME="G-TOPO-MAJR"
 
-    //imports base dxf again for export in part 2; hard to script export of split dxfs
+        //imports base dxf again for export in part 2; hard to script export of split dxf imported the first time
     IMPORT FILENAME="%BASEDXF%"
     EDIT_VECTOR                                         \
         FILENAME="%BASEDXF%"                            \
         MOVE_TO_NEW_LAYER=YES                           \
-        NEW_LAYER_NAME="basedxf"
+        NEW_LAYER_NAME="basedxf_whole"
     LOG_MESSAGE %TIMESTAMP%: Step7 done: UNClipped Contours Generated, split and individually colored, not whole layer colored
 
 
 //8: Hide all except the obstruction and contour layers
-    LAYER_LOOP_START \
+	SET_LAYER_OPTIONS \
         FILENAME="*" \
-        VAR_NAME_PREFIX="HIDE"
-    SET_LAYER_OPTIONS \
-        FILENAME="%HIDE_FNAME_W_DIR%" \
         HIDDEN=YES
-	LAYER_LOOP_END
 
     SET_LAYER_OPTIONS FILENAME="obs_areas - Unknown Line Type" HIDDEN=NO
-    SET_LAYER_OPTIONS FILENAME="G-TOPO-MINR"   HIDDEN=NO
-    SET_LAYER_OPTIONS FILENAME="G-TOPO-MAJR"   HIDDEN=NO
+    SET_LAYER_OPTIONS FILENAME="G-TOPO-MINR"                   HIDDEN=NO
+    SET_LAYER_OPTIONS FILENAME="G-TOPO-MAJR"                   HIDDEN=NO
 
     LOG_MESSAGE %TIMESTAMP%: Step8 done: Only operable layers not hidden
 
-LOG_MESSAGE  Process Complete; Elapsed time %TIME_SINCE_START% Please now crop the contours to A-OBSTRUCTION, and run Topo_Script2.gms to export and merge
+LOG_MESSAGE  Process Complete; Elapsed time %TIME_SINCE_START% Please now crop the contours to 'obs_areas - Unknown Line Type', and run Topo_Script2.gms to export and merge or do so manually with A-OBSTRUCTION, G-TOPO-MINR, G-TOPO-MAJR, and basedxf_whole
 PLAY_SOUND
+
+
+//  //below here is only used if automatic cropping is implemented, see code line 163
+
+
+//     SET_LAYER_OPTIONS FILENAME="A-OBSTRUCTION" HIDDEN=NO
+//     SET_LAYER_OPTIONS FILENAME="G-TOPO-MINR"   HIDDEN=NO
+//     SET_LAYER_OPTIONS FILENAME="G-TOPO-MAJR"   HIDDEN=NO
+// 	SET_LAYER_OPTIONS FILENAME="basedxf_whole"       HIDDEN=NO
+
+
+// //9: Export 3 layers and base dxf from second import of Topo_Script1
+//     EXPORT_VECTOR                       \
+// 		FILENAME=%OUTPUTFOLDER%basedxf_plus_obs_contours.dxf \
+// 		TYPE=DXF                        \
+// 		EXPORT_LAYER="A-OBSTRUCTION"    \
+// 	    EXPORT_LAYER="G-TOPO-MINR"      \
+//         EXPORT_LAYER="G-TOPO-MAJR"      \
+//         EXPORT_LAYER="basedxf_whole"          \
+// 		GEN_PRJ_FILE=NO                 \
+// 		SPLIT_BY_ATTR=NO                \
+//         //unless the two scirpts are put together, %RES_M% has no value and the resolution is automatic
+//         SPATIAL_RES_METERS=%RES_M%
+//     LOG_MESSAGE %TIMESTAMP%: Step9 done: file exported as %OUTPUTFOLDER%basedxf_plus_obs_contours.dxf
+
+
+// //10: Import new DXF and hide all other layers
+// 	SET_LAYER_OPTIONS \
+//         FILENAME="*" \
+//         HIDDEN=YES
+    
+// 	IMPORT FILENAME=%OUTPUTFOLDER%basedxf_plus_obs_contours.dxf USE_DEFAULT_PROJ=YES
+//     LOG_MESSAGE %TIMESTAMP%: Step10 done: new file opened and other layers turned off
+
+// LOG_MESSAGE  Process Complete; Elapsed time: %TIME_SINCE_START%
