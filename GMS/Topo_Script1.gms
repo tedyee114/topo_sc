@@ -138,7 +138,7 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
         FILENAME="obs_areas - Unknown Line Type"        \
 		ATTR_VAL="<Feature Desc>=A-OBSTRUCTION"         \
         STYLE_ATTR="LINE_COLOR=RGB(255,0,0)"            \
-        MOVE_TO_NEW_LAYER=YES                           \
+        COPY_TO_NEW_LAYER=YES                           \
 		NEW_LAYER_NAME="A-OBSTRUCTION"
     
     LOG_MESSAGE %TIMESTAMP%: Step6 done: small islands removed
@@ -208,7 +208,7 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
         HIDDEN=YES
 	LAYER_LOOP_END
 
-    SET_LAYER_OPTIONS FILENAME="A-OBSTRUCTION" HIDDEN=NO
+    SET_LAYER_OPTIONS FILENAME="obs_areas - Unknown Line Type" HIDDEN=NO
     SET_LAYER_OPTIONS FILENAME="G-TOPO-MINR"   HIDDEN=NO
     SET_LAYER_OPTIONS FILENAME="G-TOPO-MAJR"   HIDDEN=NO
 

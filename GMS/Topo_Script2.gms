@@ -6,21 +6,16 @@
 //Units automatically taken from pointcloud and printed to the console, can only be changed via the code
 
 GLOBAL_MAPPER_SCRIPT VERSION="1.00"
-//9: Read user-inputted values that were stored (as a workaround) as pointcloud attributes
-    QUERY_LAYER_METADATA                \
-        METADATA_LAYER="pointcloud"     \
-        METADATA_ATTR="OUTPUTFOLDER"    \
-        RESULT_VAR=%OUTPUTFOLDER%
 
-    QUERY_LAYER_METADATA                \
-        METADATA_LAYER="pointcloud"     \
-        METADATA_ATTR="RES_M"           \
-        RESULT_VAR=%RES_M%
-    LOG_MESSAGE %TIMESTAMP%: Step9 done: read settings from Topo_Script1
+    SET_LAYER_OPTIONS FILENAME="A-OBSTRUCTION" HIDDEN=NO
+    SET_LAYER_OPTIONS FILENAME="G-TOPO-MINR"   HIDDEN=NO
+    SET_LAYER_OPTIONS FILENAME="G-TOPO-MAJR"   HIDDEN=NO
+	SET_LAYER_OPTIONS FILENAME="basedxf"       HIDDEN=NO
 
-//10: Export 3 layers and base dxf from second import of Topo_Script1
-    EXPORT_ANY                          \
-		FILENAME=%OUTPUTFOLDER%basedxf_with_obs_contours.dxf \
+
+//9: Export 3 layers and base dxf from second import of Topo_Script1
+    EXPORT_VECTOR                       \
+		FILENAME=basedxf_with_obs_contours.dxf \
 		TYPE=DXF                        \
 		EXPORT_LAYER="obs_polygons"     \
 	    EXPORT_LAYER="G-TOPO-MINR"      \
@@ -28,20 +23,16 @@ GLOBAL_MAPPER_SCRIPT VERSION="1.00"
         EXPORT_LAYER="basedxf"          \
 		GEN_PRJ_FILE=NO                 \
 		SPLIT_BY_ATTR=NO                \
-		SPATIAL_RES_METERS=%RES_M%
-    LOG_MESSAGE %TIMESTAMP%: Step10 done: file exported to %OUTPUTFOLDER%
+		SPATIAL_RES_METERS=0.3
+    LOG_MESSAGE %TIMESTAMP%: Step9 done: file exported as basedxf_with_obs_contours.dxf
 
 
-//11: Import new DXF and hide all other layers
-	LAYER_LOOP_START \
+//10: Import new DXF and hide all other layers
+	SET_LAYER_OPTIONS \
         FILENAME="*" \
-        VAR_NAME_PREFIX="HIDE"
-    SET_LAYER_OPTIONS \
-        FILENAME="%HIDE_FNAME_W_DIR%" \
         HIDDEN=YES
-	LAYER_LOOP_END
     
-	IMPORT FILENAME=%OUTPUTFOLDER%basedxf_with_obs_contours.dxf USE_DEFAULT_PROJ=YES
-    LOG_MESSAGE %TIMESTAMP%: Step11 done: new file opened and other layers turned off
+	IMPORT FILENAME=basedxf_with_obs_contours.dxf USE_DEFAULT_PROJ=YES
+    LOG_MESSAGE %TIMESTAMP%: Step10 done: new file opened and other layers turned off
 
 LOG_MESSAGE  Process Complete; Elapsed time: %TIME_SINCE_START%
